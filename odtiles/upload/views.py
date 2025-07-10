@@ -18,10 +18,10 @@ def geotiff_upload(request):
         message = '[ERROR]トークンが設定されていないか、無効です。'
         return HttpResponse(message, status=403)
 
-    file = request.FILES['file']
-    if not file:
+    if request.FILES is None or 'file' not in request.FILES:
         message = '[ERROR]ファイルがアップロードされていません。'
         return HttpResponse(message, status=400)
+    file = request.FILES['file']
     
     if file.name.split('.')[-1].lower() != 'tif':
         message = '[ERROR]アップロードされたファイルの識別子が.tifではありません。'
