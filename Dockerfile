@@ -91,8 +91,6 @@ RUN sed -i "s!TILE_OUTPUT_FOLDER = '/mnt/odtiles/tileout'!TILE_OUTPUT_FOLDER = '
 RUN sed -i "s!TILE_MAX_AGE = 86400!TILE_MAX_AGE = ${TILE_MAX_AGE}!" /opt/odtiles/odtiles/settings.py
 RUN sed -i "s!TILE_MAX_AGE_LIVE = 60!TILE_MAX_AGE_LIVE = ${TILE_MAX_AGE_LIVE}!" /opt/odtiles/odtiles/settings.py
 
-# APIトークンの設定 (環境変数から取得)
-RUN sed -i "s!UPLOAD_API_TOKEN = ''!UPLOAD_API_TOKEN = '${UPLOAD_API_TOKEN}'!" /opt/odtiles/odtiles/settings.py
 
 RUN chmod +x /opt/odtiles/start.sh
 
