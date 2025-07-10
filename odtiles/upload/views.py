@@ -19,8 +19,12 @@ def geotiff_upload(request):
         return HttpResponse(message, status=403)
 
     file = request.FILES['file']
+    if not file:
+        message = '[ERROR]ファイルがアップロードされていません。'
+        return HttpResponse(message, status=400)
+    
     if file.name.split('.')[-1].lower() != 'tif':
-        message = '[ERROR]アップロードされたファイルはTIFF形式ではありません。'
+        message = '[ERROR]アップロードされたファイルの識別子が.tifではありません。'
         return HttpResponse(message, status=400)
     
     # ファイルを保存する
