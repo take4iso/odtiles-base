@@ -83,7 +83,6 @@ COPY odtiles/ /opt/odtiles/
 
 RUN sed -i "s!ALLOWED_HOSTS = ['localhost']!ALLOWED_HOSTS = ['${SERVER_NAME}']!" /opt/odtiles/odtiles/settings.py
 RUN sed -i "s!CSRF_TRUSTED_ORIGINS = ['http://locslhost']!CSRF_TRUSTED_ORIGINS = ['http://${SERVER_NAME}','https://${SERVER_NAME}']!" /opt/odtiles/odtiles/settings.py
-RUN sed -i "s!NON_CSRF_ALLOWED_IPS = ['127.0.0.1']!NON_CSRF_ALLOWED_IPS = ${NON_CSRF_ALLOWED_IPS}!" /opt/odtiles/odtiles/settings.py
 RUN sed -i "s!workers = 8!workers = ${UWSGI_WORKERS}!" /opt/odtiles/odtiles/uwsgi.ini
 RUN sed -i "s!0.0.0.0:8080!${UWSGI_PORT}!" /opt/odtiles/odtiles/uwsgi.ini
 RUN sed -i "s!TILE_SOURCE_FOLDER = '/mnt/odtiles/tilesrc'!TILE_SOURCE_FOLDER = '${TILE_SOURCE_FOLDER}'!" /opt/odtiles/odtiles/settings.py
