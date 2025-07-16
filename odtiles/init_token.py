@@ -1,10 +1,11 @@
 import random
 import string
 
-LETTERS = string.ascii_letters
+LETTERS = string.ascii_letters + string.digits
 #LETTERS = string.ascii_letters + string.digits + string.punctuation
 
 SETTING_FILE = '/opt/odtiles/odtiles/settings.py'
+#SETTING_FILE = './odtiles/odtiles/settings.py'
 
 def get_random_string(num):
 

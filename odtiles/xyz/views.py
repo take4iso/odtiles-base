@@ -21,7 +21,6 @@ def tileimage(request):
     tilefile = f"{settings.TILE_OUTPUT_FOLDER}/{match.group(1)}/{zoom}/{x}/{y}.png"
 
     if not os.path.exists(sourcefile):
-        print (f"Source file not found: {sourcefile}")
         return HttpResponse("Not Found", status=404)
     stime = os.path.getmtime(sourcefile)
 
