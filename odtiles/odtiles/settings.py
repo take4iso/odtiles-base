@@ -29,7 +29,7 @@ DEBUG = False
 ALLOWED_HOSTS = ['localhost']
 
 # クロスサイトリクエストフォージェリ対策
-CSRF_TRUSTED_ORIGINS = ['http://locslhost']
+CSRF_TRUSTED_ORIGINS = ['http://localhost']
 
 #アップロードAPIトークン
 UPLOAD_API_TOKEN = ''
