@@ -25,11 +25,11 @@ SECRET_KEY = 'django-insecure-qwh_l*zt7(8(twt8e4!y)t778ara_)@e%x2@%i^%y-*1e7!f1t
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-
-ALLOWED_HOSTS = ['localhost']
+# sedで書き換えるのでスペース入れない
+ALLOWED_HOSTS=['localhost']
 
 # クロスサイトリクエストフォージェリ対策
-CSRF_TRUSTED_ORIGINS = ['http://localhost']
+# CSRF_TRUSTED_ORIGINS=['http://localhost']
 
 #アップロードAPIトークン
 UPLOAD_API_TOKEN = ''
