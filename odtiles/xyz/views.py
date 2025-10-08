@@ -24,15 +24,14 @@ def tileimage(request):
         return HttpResponse("Not Found", status=404)
     stime = os.path.getmtime(sourcefile)
 
-    r = False
     if not os.path.exists(tilefile):
-        r = create_ondemand_tiles(sourcefile, f"{settings.TILE_OUTPUT_FOLDER}/{match.group(1)}", zoom, x, y)
+        create_ondemand_tiles(sourcefile, f"{settings.TILE_OUTPUT_FOLDER}/{match.group(1)}", zoom, x, y)
     else:
         ttime = os.path.getmtime(tilefile)
         if ttime < stime:
-            r = create_ondemand_tiles(sourcefile, f"{settings.TILE_OUTPUT_FOLDER}/{match.group(1)}", zoom, x, y)
+            create_ondemand_tiles(sourcefile, f"{settings.TILE_OUTPUT_FOLDER}/{match.group(1)}", zoom, x, y)
     
-    if r:
+    if os.path.exists(tilefile):
         max_age = settings.TILE_MAX_AGE
         if re.search(settings.TILE_LIVE_URL_PATTERN, tilefile):
             max_age = settings.TILE_MAX_AGE_LIVE
