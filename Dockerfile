@@ -5,7 +5,7 @@ ARG SERVER_NAME=localhost
 # uwsgi のワーカー数
 ARG UWSGI_WORKERS=8
 # uwsgi のポート番号
-ARG UWSGI_PORT=0.0.0.0:8080
+ARG UWSGI_PORT=8080
 # タイルソースフォルダ
 ARG TILE_SOURCE_FOLDER=/mnt/odtiles/tilesrc/
 # タイル出力フォルダ
@@ -82,7 +82,7 @@ COPY odtiles/ /opt/odtiles/
 
 RUN sed -i "s!ALLOWED_HOSTS=['localhost']!ALLOWED_HOSTS=['${SERVER_NAME}']!" /opt/odtiles/odtiles/settings.py
 RUN sed -i "s!workers = 8!workers = ${UWSGI_WORKERS}!" /opt/odtiles/odtiles/uwsgi.ini
-RUN sed -i "s!0.0.0.0:8080!${UWSGI_PORT}!" /opt/odtiles/odtiles/uwsgi.ini
+RUN sed -i "s!0.0.0.0:8080!0.0.0.0:${UWSGI_PORT}!" /opt/odtiles/odtiles/uwsgi.ini
 RUN sed -i "s!TILE_SOURCE_FOLDER = '/mnt/odtiles/tilesrc'!TILE_SOURCE_FOLDER = '${TILE_SOURCE_FOLDER}'!" /opt/odtiles/odtiles/settings.py
 RUN sed -i "s!TILE_OUTPUT_FOLDER = '/mnt/odtiles/tileout'!TILE_OUTPUT_FOLDER = '${TILE_OUTPUT_FOLDER}'!" /opt/odtiles/odtiles/settings.py
 RUN sed -i "s!TILE_MAX_AGE = 86400!TILE_MAX_AGE = ${TILE_MAX_AGE}!" /opt/odtiles/odtiles/settings.py
