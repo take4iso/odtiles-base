@@ -19,6 +19,8 @@ from django.urls import path, re_path, include
 from django.http import HttpResponse
 from xyz import views as xyz_views
 from upload import views as upload_views
+from setCapabilities import views as setCapabilities_views
+from wms import views as wms_views
 
 def index(request):
     with open('odtiles/index.html', 'rb') as f:
@@ -28,5 +30,7 @@ urlpatterns = [
     # XYZ Tile Service
     re_path(r'^xyz/.*/[0-9]+/[0-9]+/[0-9]+\.png$', xyz_views.tileimage, name='tileimage'),
     re_path(r'upload/.*', upload_views.geotiff_upload, name='upload'),
+    re_path(r'setCapabilities/.*', setCapabilities_views.setCapabilities, name='setCapabilities'),
+    re_path(r'wms/.*', wms_views.wms, name='wms'),
     path('', index, name='index'),
 ]

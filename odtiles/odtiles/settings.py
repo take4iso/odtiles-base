@@ -23,10 +23,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-qwh_l*zt7(8(twt8e4!y)t778ara_)@e%x2@%i^%y-*1e7!f1t'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 # sedで書き換えるのでスペース入れない
 ALLOWED_HOSTS=['localhost']
+
+# URL(wmsのcapabilitiesで使う)
+URL='http://localhost:8000'
 
 # クロスサイトリクエストフォージェリ対策
 # CSRF_TRUSTED_ORIGINS=['http://localhost']
@@ -37,10 +40,11 @@ UPLOAD_API_TOKEN = ''
 # タイルのルートディレクトリ
 TILE_SOURCE_FOLDER = '/mnt/odtiles/tilesrc/'
 TILE_OUTPUT_FOLDER = '/mnt/odtiles/tileout/'
+WMS_OUTPUT_FOLDER = '/mnt/odtiles/wmsout/'
 # タイルURLのLIVE判定
-TILE_LIVE_URL_PATTERN = r'/live/|/LIVE/'
-TILE_MAX_AGE = 86400
-TILE_MAX_AGE_LIVE = 60
+LIVE_URL_PATTERN = r'/live/|/LIVE/'
+MAX_AGE = 86400
+MAX_AGE_LIVE = 60
 
 
 # Application definition

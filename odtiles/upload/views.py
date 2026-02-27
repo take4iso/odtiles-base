@@ -6,7 +6,7 @@ from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 
 
-# タイル画像を返す
+# タイル画像のアップロード
 @csrf_exempt
 def geotiff_upload(request):
     if request.method != 'POST':
@@ -14,7 +14,7 @@ def geotiff_upload(request):
         return HttpResponse(message, status=405)
     
     apitoken = request.headers.get('token')
-    if not apitoken or apitoken == '' or apitoken != settings.UPLOAD_API_TOKEN:
+    if (not apitoken or apitoken == '' or apitoken != settings.UPLOAD_API_TOKEN) and settings.DEBUG == False:
         message = '[ERROR]トークンが設定されていないか、無効です。'
         return HttpResponse(message, status=403)
 
@@ -27,7 +27,7 @@ def geotiff_upload(request):
         message = '[ERROR]アップロードされたファイルの識別子が.tifではありません。'
         return HttpResponse(message, status=400)
     
-    # ファイルを保存する
+    # POSTリクエストのファイルを保存する
     with tempfile.TemporaryDirectory() as tmpdir:
         # 拡張子を小文字に変換
         base_name, ext = os.path.splitext(file.name)

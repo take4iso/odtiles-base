@@ -1,18 +1,17 @@
 # odtiles-base
-オンデマンド型のXYZタイル地図を提供するサービス   
+オンデマンド型のXYZタイル地図およびWMSを提供するサービス   
 タイル生成は、gdal2tilesにパッチを当てた[gdal2tiles.py](https://github.com/take4iso/gdal2tiles)を使用している（詳細はgdal2tilesのREADME）  
 
 ## システム構成
 - djangoを使用したWebアプリケーション
-- uwsgi, ポート番号8080
-- アプリケーションルートフォルダ
+- DockerComposeで配置されるアプリケーションのルートフォルダ
     - `/opt/odtiles`
-- ログフォルダ
+- DockerComposeで配置されるログフォルダ
     - `/opt/odtiles/logs`
     - odtiles/uwsgi.ini で設定
 - タイルソースフォルダ
     - `/mnt/odtiles/tilesrc`
-    - XYZタイルのソース画像を配置する場所
+    - XYZタイルおよびWMSのソース画像を配置する場所
     - サブフォルダを任意の階層で作成可能
     - GeoTIFFファイルを配置する
     - ファイル拡張子は`.tif` 
@@ -23,46 +22,117 @@
     - 画像キャッシュとしても使用される
     - 定期的な削除が必要
     - `odtiles/settings.py` で設定
+- ＷＭＳ出力フォルダ
+    - `/mnt/odtiles/wmsout`
+    - 生成したWMS画像の保存先
+    - 画像キャッシュとしても使用される
+    - 定期的な削除が必要
+    - `odtiles/settings.py` で設定
+
+## 環境設定
+
+djangoの設定ファイル（`odtiles/settings.py`）から環境設定をしている
+
+
+- URL
+    - 外部からアクセスするときのURLを設定する
+    - WMSのGepCapabilitiesの応答で使用する
+- UPLOAD_API_TOKEN
+    - upload APIと、setCapabilities API を使用するときに指定するトークン
+- TILE_SOURCE_FOLDER
+    - タイルおよびWMSの元になる画像を格納するフォルダ 
+- TILE_OUTPUT_FOLDER
+    - タイル画像出力のキャッシュフォルダ
+- WMS_OUTPUT_FOLDER
+    - WMS画像出力のキャッシュフォルダ
+- MAX_AGE
+    - ブラウザキャッシュの寿命（通常画像）
+- MAX_AGE_LIVE
+    - ブラウザキャッシュの寿命（ライブフォルダの画像）
 
 ## UPLOAD APIトークン
-- アップロードAPIを使用するためのトークンは、コンテナの初回起動時に自動生成される
-- トークンは、`odtiles/settings.py` の `UPLOAD_API_TOKEN` で設定される
-- ログもしくはsettings.pyを開いてで確認すること
-## タイルのURL
-- タイルのURLは、`http(s)://<サーバー名>/xyz/<サブフォルダを任意に設定できる>/{z}/{x}/{-y}.png`
+- アップロードAPIを使用するためのトークンは、コンテナの初回起動時に`init_token.py`により設定される
+- Dockerのログもしくはsettings.pyを開いて確認する
+## XYZタイルのURL
+URLは、`http(s)://<サーバー名>/xyz/<サブフォルダを任意に設定できる>/{z}/{x}/{-y}.png`
 - タイル座標は左下原点。
-- タイルURLのサブフォルダはtilesrcフォルダ内のサブフォルダとGeoTIFFのファイル名で決まる
+- タイルURLのサブフォルダは`<TILE_SOURCE_FOLDER>`のサブフォルダとGeoTIFFのファイル名で決まる
 ### 例
-- tilesrcフォルダに以下のGeoTIFFファイルがあるとした場合
-    - `/mnt/odtiles/tilesrc/2023/01/01/sample.tif`
-- タイルのURLは以下のようになる
-    - `http(s)://<サーバー名>/xyz/2023/01/01/sample/{z}/{x}/{-y}.png`
-- タイル画像のMAX_AGEは、`odtiles/settings.py` で設定されている
-    - `TILE_MAX_AGE`（デフォルトは86400秒）
-- ライブタイルについて
-    - 短時間で更新されるタイル画像のこと
-    - サブフォルダに `/live/` または `/LIVE/` を含む場合、ライブタイルとして扱われる
-    - ライブタイルのMAX_AGEは、`odtiles/settings.py` で設定されている
-    - `TILE_MAX_AGE_LIVE`（デフォルトは60秒）
-    - tilesrc のGeoTIFFファイルを上書き更新すると、タイルキャッシュ画像が更新される
+ソースフォルダに以下のGeoTIFFファイルがあるとした場合
+- `<TILE_SOURCE_FOLDER>/aaa/bbb/sample.tif`
+  
+タイルのURLは以下のようになる
+- `http(s)://<サーバー名>/xyz/aaa/bbb/sample/{z}/{x}/{-y}.png`
+
 ## アップロードAPI
-- タイルソースフォルダにGeoTIFFファイルをアップロードするAPI
-- アップロードAPIは、POSTメソッドで `/upload/` エンドポイントにリクエストを送信する
-- リクエストヘッダに `token` を含める
-- リクエストボディにGeoTIFFファイルを含める（名称：file）
+GeoTIFFファイルをアップロードする
+- POSTで `/upload/` にリクエストを送信する
+- リクエストヘッダに `token` を指定する
+- リクエストにGeoTIFFファイルを添付する（名称：file）
 - アップロードAPIトークンは、`odtiles/settings.py` の `UPLOAD_API_TOKEN` で設定する
 - アップロードURLのサブフォルダが、tilesrcフォルダのサブフォルダに対応する
-- アップロードURLのサブフォルダは、任意の階層で設定可能
-### 例
-- タイルソースフォルダに以下のGeoTIFFファイルをアップロードする場合は、
-    - `/mnt/odtiles/tilesrc/2023/01/01/sample.tif`
-- アップロードAPIのURLは以下のようになる
-    - `http(s)://<サーバー名>/upload/2023/01/01/`
-    - curl コマンドの例
-    ```bash
-    curl -X POST http(s)://<サーバー名>/upload/2023/01/01/ \
-        -H "token:<UPLOAD_API_TOKEN>" \
-        -F "file=@/my/file/path/sample.tif"
-    ```
+
+`http(s)://<ドメイン名>/upload/aaa/bbb` に対して、sample.tifファイルをポストした場合、  
+`<TILE_SOURCE_FOLDER>/aaa/bbb/sample.tif` にファイルが格納される
+
+上記のsample.tifに対するXYZタイルマップのURLは以下になる
+`http(s)://<ドメイン名>/xyz/aaa/bbb/sample/{z}/{x}/{-y}.png`
+
+#### curl コマンドの例
+```
+curl -X POST http(s)://<サーバー名>/upload/aaa/bbb/ \
+    -H "token:<UPLOAD_API_TOKEN>" \
+    -F "file=@/my/file/path/sample.tif"
+```
+
+## WMSを有効化するAPI
+アップロードしたGeoTIFFファイルのWMSを有効にする
+
+- POSTで`setCapabilities`にリクエストを送信する
+- リクエストヘッダに`token`を指定する
+- リクエストボディにCapabilities情報をJSONで指定する
+- アップロードAPIトークンは、`odtiles/settings.py` の `UPLOAD_API_TOKEN` で設定する
+- アップロードURLのサブフォルダが、tilesrcフォルダのサブフォルダに対応する
+
+### Capabilities情報
+`layers`の名称の配列に、以下の項目を持つオブジェクトを列挙する（複数指定可能）
+| 項目名    | 型     | 説明                | 必須 |
+| :-------- | :----- | :------------------ | :--- |
+| file      | string | GeoTIFFのファイル名 | ✔    |
+| name      | string | 名称（レイヤ名称）  | ✔    |
+| legendUrl | string | 凡例画像のURL       | -    |
+
+#### Capabilities情報の記述例
+```
+{
+    "layers" : [
+        {
+            "file" : "sample.tif",
+            "name" : "サンプルレイヤ",
+            "legendUrl" : "https://sample.jp/my/legend/image.png"
+        }
+    ]
+}
+```
+
+#### curl コマンドの例
+```
+curl -X POST http(s)://<サーバー名>/setCapabilities/aaa/bbb/ \
+    -H "token:<UPLOAD_API_TOKEN>" \
+    -d '{"layers": [{"file": "sample.tif", "name": "サンプルレイヤ", "legendUrl": "https://sample.jp/my/legend/image.png"}]}'
+```
+このときのGetCapabilitiesのURLは、  
+`http(s)://<サーバー名>/wms/aaa/bbb/?SERVICE=WMS&REQUEST=GetCapabilities&VERSION=1.1.1`
+
+## WMSを無効にするAPI
+layers配列のないCapabilities情報をPOSTすることでWMSを無効にできる
+
+#### curl コマンドの例
+```
+curl -X POST http(s)://<サーバー名>/setCapabilities/aaa/bbb/ \
+    -H "token:<UPLOAD_API_TOKEN>" \
+    -d '{"layers": []}'
+```
+-----
 ## Dockerイメージ
 - [take4iso/odtiles-base](https://hub.docker.com/r/take4iso/odtiles-base)

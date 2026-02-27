@@ -2,6 +2,8 @@ FROM oraclelinux:8
 
 # サーバー名
 ARG SERVER_NAME=localhost
+# URL
+ARG URL=http://localhost:8000
 # uwsgi のワーカー数
 ARG UWSGI_WORKERS=8
 # uwsgi のポート番号
@@ -10,6 +12,8 @@ ARG UWSGI_PORT=8080
 ARG TILE_SOURCE_FOLDER=/mnt/odtiles/tilesrc/
 # タイル出力フォルダ
 ARG TILE_OUTPUT_FOLDER=/mnt/odtiles/tileout/
+# WMS出力フォルダ
+ARG WMS_OUTPUT_FOLDER=/mnt/odtiles/wmsout/
 # タイルの最大キャッシュ期間（秒）
 ARG TILE_MAX_AGE=86400
 # タイルの最大キャッシュ期間（ライブタイル用、秒）
