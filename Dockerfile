@@ -30,9 +30,9 @@ RUN pip3 install --upgrade pip && \
 
 # sqlite3のインストール
 RUN cd /root && \
-    wget https://sqlite.org/2025/sqlite-autoconf-3500400.tar.gz && \
-    tar -zxvf sqlite-autoconf-3500400.tar.gz && \
-    cd sqlite-autoconf-3500400 && \
+    wget https://sqlite.org/2026/sqlite-autoconf-3510200.tar.gz&& \
+    tar -zxvf sqlite-autoconf-3510200.tar.gz && \
+    cd sqlite-autoconf-3510200 && \
     ./configure --prefix=/usr --enable-all && \
     CFLAGS="-DHAVE_READLINE=1 -DSQLITE_ALLOW_URI_AUTHORITY=1 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_DBPAGE_VTAB=1 -DSQLITE_ENABLE_DBSTAT_VTAB=1 -DSQLITE_ENABLE_DESERIALIZE=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_ENABLE_FTS5=1 -DSQLITE_ENABLE_GEOPOLY=1 -DSQLITE_ENABLE_JSON1=1 -DSQLITE_ENABLE_MEMSYS3=1 -DSQLITE_ENABLE_PREUPDATE_HOOK=1 -DSQLITE_ENABLE_RTREE=1 -DSQLITE_ENABLE_SESSION=1 -DSQLITE_ENABLE_SNAPSHOT=1 -DSQLITE_ENABLE_STMTVTAB=1 -DSQLITE_ENABLE_UPDATE_DELETE_LIMIT=1 -DSQLITE_ENABLE_UNLOCK_NOTIFY=1 -DSQLITE_INTROSPECTION_PRAGMAS=1 -DSQLITE_USE_ALLOCA=1 -DSQLITE_USE_FCNTL_TRACE=1 -DSQLITE_HAVE_ZLIB=1" && \ 
     make && \
@@ -52,7 +52,7 @@ RUN cd /root && \
 
 # netcdfのインストール
 RUN cd /root && \
-    git clone https://github.com/Unidata/netcdf-c.git -b v4.9.3 && \
+    git clone https://github.com/Unidata/netcdf-c.git -b v4.10.0 && \
     cd netcdf-c && \
     mkdir build && \
     cd build && \
@@ -65,7 +65,7 @@ RUN cd /root && \
 
 # gdalのインストール
 RUN cd /root && \
-    git clone https://github.com/OSGeo/gdal.git -b v3.11.1 && \
+    git clone https://github.com/OSGeo/gdal.git -b v3.11.5 && \
     cd gdal && \
     mkdir build && \
     cd build && \
@@ -79,7 +79,7 @@ RUN pip3 install django uwsgi wget requests
 COPY odtiles/ /opt/odtiles/
 RUN chmod +x /opt/odtiles/start.sh
 
-# あとかたづけ
+# あとかたづけbuild
 RUN rm -rf /root/*
 
 CMD ["/opt/odtiles/start.sh"]
