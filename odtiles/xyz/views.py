@@ -1,8 +1,8 @@
-import re, math
+import os, re, math
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.conf import settings
-from gdal2tiles import *
+from osgeo import gdal
 
 originShift = 20037508.342789244
 
@@ -17,6 +17,22 @@ def xyz_to_mercator_bbox(x, y, z):
     minY = originShift - (y + 1) * 256 * resolution
 
     return (minX, minY, maxX, maxY)
+
+# GDALのWARPでタイル画像を生成する
+def create_ondemand_tiles(sourcefile, outputpath, zoom, x, y):
+    bbox = xyz_to_mercator_bbox(x, y, zoom)
+    outputfile = f"{outputpath}/{zoom}/{x}/{y}.png"
+    os.makedirs(f'{outputpath}/{zoom}/{x}/', exist_ok=True)
+    gdal.Warp(
+        outputfile,
+        sourcefile,
+        format='PNG',
+        outputBounds=bbox,
+        width=256,
+        height=256,
+        dstSRS='EPSG:3857',
+        resampleAlg='bilinear'
+    )
 
 # タイル画像を返す
 def tileimage(request):

@@ -15,9 +15,9 @@ ARG TILE_OUTPUT_FOLDER=/mnt/odtiles/tileout/
 # WMS出力フォルダ
 ARG WMS_OUTPUT_FOLDER=/mnt/odtiles/wmsout/
 # タイルの最大キャッシュ期間（秒）
-ARG TILE_MAX_AGE=86400
+ARG MAX_AGE=86400
 # タイルの最大キャッシュ期間（ライブタイル用、秒）
-ARG TILE_MAX_AGE_LIVE=60
+ARG MAX_AGE_LIVE=60
 
 RUN dnf config-manager --enable ol8_codeready_builder && \
     dnf update && \
@@ -75,24 +75,8 @@ RUN cd /root && \
 
 RUN pip3 install django uwsgi wget requests
 
-# gdal2tiles(ondemand pache) のインストール
-RUN cd /root && \
-    git clone https://github.com/take4iso/gdal2tiles && \
-    cd gdal2tiles && \
-    python3 setup.py install
-
 # odtilesのインストール
 COPY odtiles/ /opt/odtiles/
-
-RUN sed -i "s!ALLOWED_HOSTS=['localhost']!ALLOWED_HOSTS=['${SERVER_NAME}']!" /opt/odtiles/odtiles/settings.py
-RUN sed -i "s!workers = 8!workers = ${UWSGI_WORKERS}!" /opt/odtiles/odtiles/uwsgi.ini
-RUN sed -i "s!0.0.0.0:8080!0.0.0.0:${UWSGI_PORT}!" /opt/odtiles/odtiles/uwsgi.ini
-RUN sed -i "s!TILE_SOURCE_FOLDER = '/mnt/odtiles/tilesrc'!TILE_SOURCE_FOLDER = '${TILE_SOURCE_FOLDER}'!" /opt/odtiles/odtiles/settings.py
-RUN sed -i "s!TILE_OUTPUT_FOLDER = '/mnt/odtiles/tileout'!TILE_OUTPUT_FOLDER = '${TILE_OUTPUT_FOLDER}'!" /opt/odtiles/odtiles/settings.py
-RUN sed -i "s!TILE_MAX_AGE = 86400!TILE_MAX_AGE = ${TILE_MAX_AGE}!" /opt/odtiles/odtiles/settings.py
-RUN sed -i "s!TILE_MAX_AGE_LIVE = 60!TILE_MAX_AGE_LIVE = ${TILE_MAX_AGE_LIVE}!" /opt/odtiles/odtiles/settings.py
-
-
 RUN chmod +x /opt/odtiles/start.sh
 
 # あとかたづけ
