@@ -1,0 +1,19 @@
+# Set default behavior to handle all files as text and force LF line endings on checkout.
+* text=auto eol=lf
+
+# Explicitly set line endings for specific file types if needed
+*.sh text eol=lf
+*.py text eol=lf
+Dockerfile text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# Binary files - Git should not try to fix line endings in these
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
