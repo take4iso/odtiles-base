@@ -22,12 +22,8 @@ def updateCapabilities(base_url="http://localhost:8000/wms", layers=None):
 
     # すべての OnlineResource の URL を更新
     xlink_href = '{http://www.w3.org/1999/xlink}href'
-    getCapabilities = root.find('.//GetCapabilities//DCPType//HTTP//Get//OnlineResource')
-    if getCapabilities != None :
-        getCapabilities.attrib[xlink_href] = base_url+'?'
-    getMap = root.find('.//GetMap//DCPType//HTTP//Get//OnlineResource')
-    if getMap != None :
-        getMap.attrib[xlink_href] = base_url+'?'
+    for onlineResource in root.findall('.//OnlineResource'):
+        onlineResource.attrib[xlink_href] = base_url+'?'
 
     # 新しいレイヤーの追加 (ユーザーのリクエスト)
     # 親となる Layer 要素を取得
@@ -52,7 +48,7 @@ def updateCapabilities(base_url="http://localhost:8000/wms", layers=None):
                 legendUrl = ET.SubElement(style, 'LegendURL')
                 ET.SubElement(legendUrl, 'Format').text = 'image/png'
                 ET.SubElement(legendUrl, 'OnlineResource', {
-                    xlink_href: f'{layer["legendUrl"]}'
+                    'xlink:type':'simple', xlink_href: f'{layer["legendUrl"]}'
                 })
 
     # インデントを付ける
