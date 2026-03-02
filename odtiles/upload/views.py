@@ -42,8 +42,8 @@ def geotiff_upload(request):
         match = re.match(pattern, request.path)
 
         # ファイルの移動
-        os.makedirs(f'{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/', exist_ok=True)
-        shutil.move(f'{tmpdir}/{file_name}', f'{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/{file_name}')
+        os.makedirs(os.path.normpath(f'{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/'), exist_ok=True)
+        shutil.move(os.path.normpath(f'{tmpdir}/{file_name}'), os.path.normpath(f'{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/{file_name}'))
         
         # タイル画像のパスが存在するか確認
-        return HttpResponse(f'uploaded {settings.TILE_SOURCE_FOLDER}/{match.group(1)}/{file_name}', status=200)
+        return HttpResponse(f'uploaded {os.path.normpath(f"{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/{file_name}")}', status=200)

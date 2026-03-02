@@ -46,11 +46,11 @@ def tileimage(request):
     if match.group(1) is None or match.group(1) == '':
         return HttpResponse("Invalid tile request", status=400)
     
-    sourcefile = settings.TILE_SOURCE_FOLDER + '/' +  match.group(1) + '.tif'
+    sourcefile = os.path.normpath(settings.TILE_SOURCE_FOLDER + '/' +  match.group(1) + '.tif')
     zoom = int(match.group(2))
     x = int(match.group(3))
     y = int(match.group(4))
-    tilefile = f"{settings.TILE_OUTPUT_FOLDER}/{match.group(1)}/{zoom}/{x}/{y}.png"
+    tilefile = os.path.normpath(f"{settings.TILE_OUTPUT_FOLDER}/{match.group(1)}/{zoom}/{x}/{y}.png")
 
     if not os.path.exists(sourcefile):
         return HttpResponse("Not Found", status=404)
@@ -59,12 +59,12 @@ def tileimage(request):
     stime = os.path.getmtime(sourcefile)
 
     if not os.path.exists(tilefile):
-        create_ondemand_tiles(sourcefile, f"{settings.TILE_OUTPUT_FOLDER}/{match.group(1)}", zoom, x, y)
+        create_ondemand_tiles(sourcefile, os.path.normpath(f"{settings.TILE_OUTPUT_FOLDER}/{match.group(1)}"), zoom, x, y)
     else:
         # タイル画像のタイムスタンプ取得
         ttime = os.path.getmtime(tilefile)
         if ttime < stime:
-            create_ondemand_tiles(sourcefile, f"{settings.TILE_OUTPUT_FOLDER}/{match.group(1)}", zoom, x, y)
+            create_ondemand_tiles(sourcefile, os.path.normpath(f"{settings.TILE_OUTPUT_FOLDER}/{match.group(1)}"), zoom, x, y)
     
     if os.path.exists(tilefile):
         # ブラウザキャッシュの期間を設定
