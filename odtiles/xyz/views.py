@@ -6,6 +6,26 @@ from osgeo import gdal
 
 originShift = 20037508.342789244
 
+# GeoTIFFの範囲（bbox）を取得する
+def get_bbox(sourceFile):
+    """GeoTIFFの範囲（bbox）を取得する"""
+    if not os.path.exists(sourceFile):
+        return None
+    ds = gdal.Open(sourceFile)
+    gt = ds.GetGeoTransform()
+    x_min = gt[0]
+    y_max = gt[3]
+    x_max = x_min + gt[1] * ds.RasterXSize
+    y_min = y_max + gt[5] * ds.RasterYSize
+    return [x_min, y_min, x_max, y_max]
+
+# 2つのbboxが重なっているかを判定する
+def is_bbox_overlap(bbox1, bbox2):
+    """2つのbboxが重なっているかを判定する"""
+    if bbox1[0] >= bbox2[2] or bbox1[2] <= bbox2[0] or bbox1[1] >= bbox2[3] or bbox1[3] <= bbox2[1]:
+        return False
+    return True
+
 # XYZからメルカトル座標のBBOXを計算する
 def xyz_to_mercator_bbox(x, y, z):
     initialResolution = 2 * originShift / 256
@@ -20,7 +40,15 @@ def xyz_to_mercator_bbox(x, y, z):
 
 # GDALのWARPでタイル画像を生成する
 def create_ondemand_tiles(sourcefile, outputpath, zoom, x, y):
+    # XYZからメルカトル座標のBBOXを計算
     bbox = xyz_to_mercator_bbox(x, y, zoom)
+    # ソースファイルのbboxを取得
+    source_bbox = get_bbox(sourcefile)
+    if source_bbox is None:
+        return False
+    # ソースファイルのbboxとリクエストされたbboxが重なっているか？
+    if not is_bbox_overlap(source_bbox, bbox):
+        return False
     outputfile = f"{outputpath}/{zoom}/{x}/{y}.png"
     os.makedirs(f'{outputpath}/{zoom}/{x}/', exist_ok=True)
     gdal.Warp(
@@ -33,6 +61,7 @@ def create_ondemand_tiles(sourcefile, outputpath, zoom, x, y):
         dstSRS='EPSG:3857',
         resampleAlg='bilinear'
     )
+    return True
 
 # タイル画像を返す
 def tileimage(request):

@@ -5,12 +5,42 @@ from django.http import HttpResponse
 from django.conf import settings
 from osgeo import gdal
 
+# GeoTIFFの範囲（bbox）を取得する
+def get_bbox(sourceFile):
+    """GeoTIFFの範囲（bbox）を取得する"""
+    if not os.path.exists(sourceFile):
+        return None
+    ds = gdal.Open(sourceFile)
+    gt = ds.GetGeoTransform()
+    x_min = gt[0]
+    y_max = gt[3]
+    x_max = x_min + gt[1] * ds.RasterXSize
+    y_min = y_max + gt[5] * ds.RasterYSize
+    return [x_min, y_min, x_max, y_max]
+
+# 2つのbboxが重なっているかを判定する
+def is_bbox_overlap(bbox1, bbox2):
+    """2つのbboxが重なっているかを判定する"""
+    if bbox1[0] >= bbox2[2] or bbox1[2] <= bbox2[0] or bbox1[1] >= bbox2[3] or bbox1[3] <= bbox2[1]:
+        return False
+    return True
+
 # WMS画像を生成する
 def generate_wms_image(bbox, width, height, sourceFile, outFile):
     """WMS画像を生成する"""
     #ソースファイルがあるか？
     if not os.path.exists(sourceFile):
         return False
+    
+    # ソースファイルのbboxを取得
+    source_bbox = get_bbox(sourceFile)
+    if source_bbox is None:
+        return False
+    # ソースファイルのbboxとリクエストされたbboxが重なっているか？
+    if not is_bbox_overlap(source_bbox, bbox):
+        return False
+    
+    # GDALを使用してWMS画像を生成
     gdal.Warp(
         outFile,
         sourceFile,
@@ -89,6 +119,8 @@ def wms(request):
     if format != 'IMAGE/PNG':
         return HttpResponse('Invalid format parameter. Must be image/png.', status=400)
 
+    if len(layers) == 0:
+        return HttpResponse('Invalid layers parameter. At least one layer must be specified.', status=400)
     if len(layers) > 1:
         return HttpResponse('Invalid layers parameter. Only one layer is supported per request.', status=400)
 
