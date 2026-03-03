@@ -4,6 +4,8 @@ from django.http import HttpResponse
 from django.conf import settings
 from osgeo import gdal
 
+gdal.UseExceptions()
+
 originShift = 20037508.342789244
 
 # GeoTIFFの範囲（bbox）を取得する
@@ -36,7 +38,7 @@ def xyz_to_mercator_bbox(x, y, z):
     maxX = (x + 1) * 256 * resolution - originShift
     minY = originShift - (y + 1) * 256 * resolution
 
-    return (minX, minY, maxX, maxY)
+    return [minX, minY, maxX, maxY]
 
 # GDALのWARPでタイル画像を生成する
 def create_ondemand_tiles(sourcefile, outputpath, zoom, x, y):

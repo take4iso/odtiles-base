@@ -5,6 +5,8 @@ from django.http import HttpResponse
 from django.conf import settings
 from osgeo import gdal
 
+gdal.UseExceptions()
+
 # GeoTIFFの範囲（bbox）を取得する
 def get_bbox(sourceFile):
     """GeoTIFFの範囲（bbox）を取得する"""
@@ -102,7 +104,7 @@ def wms(request):
         crs = str(request.GET['CRS']).upper()
     if 'SRS' in request.GET:
         crs = str(request.GET['SRS']).upper()
-    bbox = request.GET['BBOX'].split(',')
+    bbox = list(map(float, request.GET['BBOX'].split(',')))
     width = int(request.GET['WIDTH'])
     height = int(request.GET['HEIGHT'])
     format = request.GET['FORMAT'].upper()
