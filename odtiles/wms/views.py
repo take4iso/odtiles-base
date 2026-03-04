@@ -44,9 +44,10 @@ def wms(request):
         return HttpResponse('Bad Request', status=400)
 
     # Capabilitiesファイルがなければ、WMSを止める
-    capabilities = f'{settings.TILE_SOURCE_FOLDER}/{match_path.group(1)}/.wms/capabilities.xml'
+    subpath = match_path.group(1).rsplit('/')[0]
+    capabilities = os.path.normpath(f'{settings.TILE_SOURCE_FOLDER}/{subpath}/.wms/capabilities.xml')
     if not os.path.exists(capabilities):
-        return HttpResponse('WMS is not available.', status=404)
+        return HttpResponse(f'WMS is not available.', status=404)
        
     required_params = ['SERVICE', 'REQUEST', 'VERSION']
     for param in required_params:
