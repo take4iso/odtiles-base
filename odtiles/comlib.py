@@ -129,3 +129,28 @@ def generateImage(bbox, width, height, sourceFile, srcinfo, outFile):
     if not os.path.exists(outFile):
         return False
     return True
+
+
+# トークンファイルを設定する
+def setTokenFile(token: str, srcfile: str):
+    """トークンがない場合はトークンファイルを削除する。トークンがある場合はトークンファイルに書き込む。"""
+    if not os.path.exists(srcfile):
+        return False
+    tokenfile = f'{srcfile}.token'
+    if token is None or token == '':
+        if os.path.exists(tokenfile):
+            os.remove(tokenfile)
+        return True
+    with open(tokenfile, 'w', encoding='utf-8') as f:
+        f.write(token)
+    return True
+
+# トークンファイルを読み込む
+def getTokenFromFile(srcfile: str):
+    """トークンファイルからトークンを読み込む。トークンファイルがない場合はNoneを返す。"""
+    tokenfile = f'{srcfile}.token'
+    if not os.path.exists(tokenfile):
+        return None
+    with open(tokenfile, 'r', encoding='utf-8') as f:
+        token = f.read().strip()
+    return token

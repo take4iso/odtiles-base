@@ -5,14 +5,25 @@ from django.http import HttpResponse
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from .capabilities import create
-from comlib import getGeotiffInfo, isBboxOverlap
+from comlib import getGeotiffInfo, isBboxOverlap, setTokenFile
 
 
 # Capabilitiesの設定
 @csrf_exempt
 def setCapabilities(request):
+    # URLパターンを正規表現で解析
+    pattern = r'^/setCapabilities/(.*)$'
+    match = re.match(pattern, request.path)
+    if match is None:
+        return HttpResponse('Bad Request', status=400)
+
+    # マッチした部分の最後が/で終わっている場合は、/を削除する
+    subpath = match.group(1)
+    if subpath.endswith('/'):
+        subpath = subpath[:-1]
+
     if request.method != 'POST':
-        return HttpResponse('Method not allowed', status=405)
+        return HttpResponse('Method not allowed', status=405)   
     
     apitoken = request.headers.get('token')
     if (not apitoken or apitoken == '' or apitoken != settings.UPLOAD_API_TOKEN) and settings.DEBUG == False:
@@ -27,46 +38,38 @@ def setCapabilities(request):
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
-        print(request.body)
         message = '[ERROR]リクエストボディがJSON形式ではありません。'
         return HttpResponse(message, status=400)
             
-    # URLパターンを正規表現で解析
-    pattern = r'^/setCapabilities/(.*)'
-    match = re.match(pattern, request.path)
+    # ソースファイルが存在するかをチェック
+    srcfile = os.path.normpath(f'{settings.TILE_SOURCE_FOLDER}/{subpath}.tif')
+    if not os.path.exists(srcfile):
+        message = f'[ERROR]{subpath}.tifが見つかりません。'
+        return HttpResponse(message, status=400)
 
-    if data.get('layers') is None:
-        # layersがない場合は、WMSを無効にする
-        if os.path.exists(f'{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/.wms/capabilities.xml'):
-            os.remove(f'{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/.wms/capabilities.xml')
+    # dataのメンバーがあるかをチェック
+    if data.keys() is None:
+        # WMSを無効にする
+        if os.path.exists(f'{settings.TILE_SOURCE_FOLDER}/{subpath}.wms.xml'):
+            os.remove(f'{settings.TILE_SOURCE_FOLDER}/{subpath}.wms.xml')
         return HttpResponse('WMSを無効にしました', status=200)
-    else:
-        for layer in data['layers']:
-            if layer.get('file') is None:
-                message = '[ERROR]layersのfileが設定されていません。'
-                return HttpResponse(message, status=400)
-            if layer.get('title') is None:
-                message = '[ERROR]layersのtitleが設定されていません。'
-                return HttpResponse(message, status=400)
 
-    # layersにlatlon_bboxを追加する
-    for layer in data['layers']:
-        srcfile = os.path.normpath(f'{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/{layer["file"]}')
-        info = getGeotiffInfo(srcfile)
-        if info is None:
-            message = f'[ERROR]{layer["file"]}が見つかりません。'
-            return HttpResponse(message, status=400)
-        
-        layer['lonlat_bbox'] = info['lonlat_bbox']
+    # dataにlatlon_bboxを追加する
+    info = getGeotiffInfo(srcfile)
+    if info is None:
+        message = f'[ERROR]{subpath}.tifのフォーマットエラーです。'
+        return HttpResponse(message, status=400)     
+    data['lonlat_bbox'] = info['lonlat_bbox']
+    data['name'] = subpath.split('/')[-1]
 
+    #トークンファイルを設定する
+    token = data.get('token')
+    setTokenFile(token, srcfile)
+    
     # フォルダ作成
-    os.makedirs(f'{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/.wms', exist_ok=True)
-    os.makedirs(f'{settings.WMS_OUTPUT_FOLDER}/{match.group(1)}/', exist_ok=True)
+    os.makedirs(f'{settings.WMS_OUTPUT_FOLDER}/{subpath}/', exist_ok=True)
 
-    # Capabilitiesの生成
-    base_url = settings.URL + '/wms/' + match.group(1) + '?'
-
-
-    create(base_url, data['layers'], f'{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/.wms/capabilities.xml')
-
+    # WMSを有効にする
+    base_url = settings.URL + '/wms/' + subpath + '?'
+    create(base_url, data, f'{settings.TILE_SOURCE_FOLDER}/{subpath}.wms.xml')
     return HttpResponse(f'WMSを有効にしました\n{base_url}SERVICE=wms&REQUEST=GetCapabilities&VERSION=1.1.1', status=200)

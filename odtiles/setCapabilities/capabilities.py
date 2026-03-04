@@ -16,7 +16,7 @@ def getXmlRoot():
     tree = ET.parse(template_path)
     return tree, tree.getroot()
 
-def updateCapabilities(base_url="http://localhost:8000/wms", layers=None):
+def updateCapabilities(base_url="http://localhost:8000/wms", data=None):
     """XMLの内容を動的に更新・追加する例"""
     tree, root = getXmlRoot()
 
@@ -25,38 +25,41 @@ def updateCapabilities(base_url="http://localhost:8000/wms", layers=None):
     for onlineResource in root.findall('.//OnlineResource'):
         onlineResource.attrib[xlink_href] = base_url
 
+    # Service タグの Title を更新
+    service_title = root.find('.//Service/Title')
+    if service_title is not None:
+        service_title.text = data['title']
     # 新しいレイヤーの追加 (ユーザーのリクエスト)
     # 親となる Layer 要素を取得
     parent_layer = root.find('.//Capability//Layer')
     if parent_layer is not None:
-        for layer in layers :
-            new_layer = ET.SubElement(parent_layer, 'Layer')
-            
-            # サブエレメントを追加
-            ET.SubElement(new_layer, 'Name').text = str(layer['file']).rsplit('.', 1)[0]
-            ET.SubElement(new_layer, 'Title').text = layer['title']
-            ET.SubElement(new_layer, 'SRS').text = 'EPSG:3857'
-            
-            if layer.get('lonlat_bbox') is not None:
-                lonlat_bbox = layer['lonlat_bbox']
-                ET.SubElement(new_layer, 'LatLonBoundingBox', {
-                    'minx': str(lonlat_bbox[0]), 'miny': str(lonlat_bbox[1]), 
-                    'maxx': str(lonlat_bbox[2]), 'maxy': str(lonlat_bbox[3])
-                })
-            else:
-                # 属性を持つサブエレメントを追加
-                ET.SubElement(new_layer, 'LatLonBoundingBox', {
-                    'minx': '-180', 'miny': '-90', 'maxx': '180', 'maxy': '90'
-                })
+        new_layer = ET.SubElement(parent_layer, 'Layer')
+        
+        # サブエレメントを追加
+        ET.SubElement(new_layer, 'Name').text = str(data['name'])
+        ET.SubElement(new_layer, 'Title').text = data['title']
+        ET.SubElement(new_layer, 'SRS').text = 'EPSG:3857'
+        
+        if data.get('lonlat_bbox') is not None:
+            lonlat_bbox = data['lonlat_bbox']
+            ET.SubElement(new_layer, 'LatLonBoundingBox', {
+                'minx': str(lonlat_bbox[0]), 'miny': str(lonlat_bbox[1]), 
+                'maxx': str(lonlat_bbox[2]), 'maxy': str(lonlat_bbox[3])
+            })
+        else:
+            # 属性を持つサブエレメントを追加
+            ET.SubElement(new_layer, 'LatLonBoundingBox', {
+                'minx': '-180', 'miny': '-90', 'maxx': '180', 'maxy': '90'
+            })
 
-            #スタイルサブエレメント
-            if layer.get('legendUrl') is not None:
-                style = ET.SubElement(new_layer, 'Style')
-                legendUrl = ET.SubElement(style, 'LegendURL')
-                ET.SubElement(legendUrl, 'Format').text = 'image/png'
-                ET.SubElement(legendUrl, 'OnlineResource', {
-                    'xlink:type':'simple', xlink_href: f'{layer["legendUrl"]}'
-                })
+        #スタイルサブエレメント
+        if data.get('legendUrl') is not None:
+            style = ET.SubElement(new_layer, 'Style')
+            legendUrl = ET.SubElement(style, 'LegendURL')
+            ET.SubElement(legendUrl, 'Format').text = 'image/png'
+            ET.SubElement(legendUrl, 'OnlineResource', {
+                'xlink:type':'simple', xlink_href: f'{data["legendUrl"]}'
+            })
 
     # インデントを付ける
     ET.indent(tree, space="  ", level=0)
@@ -69,8 +72,8 @@ def saveXml(tree, filepath):
 
 
 # Capabilitiesの生成
-def create(baseurl:str, layers:list, filepath:str):
-    tree = updateCapabilities(baseurl, layers)
+def create(baseurl:str, data:dict, filepath:str):
+    tree = updateCapabilities(baseurl, data)
     saveXml(tree, filepath)
 
 

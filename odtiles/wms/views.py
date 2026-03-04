@@ -3,7 +3,7 @@ from urllib.parse import urlparse, parse_qs
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.conf import settings
-from comlib import getGeotiffInfo, isBboxOverlap, generateImage
+from comlib import getGeotiffInfo, isBboxOverlap, generateImage, getTokenFromFile
 
 #有効桁を返す
 def significant_figures(min_val: float, max_val: float, size: int) -> int:
@@ -44,10 +44,13 @@ def wms(request):
         return HttpResponse('Bad Request', status=400)
 
     # Capabilitiesファイルがなければ、WMSを止める
-    subpath = match_path.group(1).rsplit('/')[0]
-    capabilities = os.path.normpath(f'{settings.TILE_SOURCE_FOLDER}/{subpath}/.wms/capabilities.xml')
+    # マッチした部分の最後が/で終わっている場合は、/を削除する
+    subpath = match_path.group(1)
+    if subpath.endswith('/'):
+        subpath = subpath[:-1]
+    capabilities = os.path.normpath(f'{settings.TILE_SOURCE_FOLDER}/{subpath}.wms.xml')
     if not os.path.exists(capabilities):
-        return HttpResponse(f'WMS is not available.', status=404)
+        return HttpResponse(f'WMS is not available.{subpath}', status=404)
        
     required_params = ['SERVICE', 'REQUEST', 'VERSION']
     for param in required_params:
@@ -66,7 +69,7 @@ def wms(request):
     if request.GET['REQUEST'].upper() == 'GETCAPABILITIES':
         with open(capabilities, 'r', encoding='utf-8') as f:
             res = HttpResponse(f.read(), content_type='application/xml', charset='utf-8' )
-            res['Content-Disposition'] = f'inline; filename="capabilities.xml"'
+            res['Content-Disposition'] = f'inline; filename="wms.xml"'
             return res
 
 
@@ -99,14 +102,22 @@ def wms(request):
     if format != 'IMAGE/PNG':
         return HttpResponse('Invalid format parameter. Must be image/png.', status=400)
 
-    if len(layers) == 0:
-        return HttpResponse('Invalid layers parameter. At least one layer must be specified.', status=400)
-    if len(layers) > 1:
-        return HttpResponse('Invalid layers parameter. Only one layer is supported per request.', status=400)
-
     # WMS画像の生成
-    sourceFile = os.path.normpath(f'{settings.TILE_SOURCE_FOLDER}/{match_path.group(1)}/{layers[0]}.tif')
+    sourceFile = os.path.normpath(f'{settings.TILE_SOURCE_FOLDER}/{match_path.group(1)}.tif')
+    if not os.path.exists(sourceFile):
+        return HttpResponse(f'Source file not found: {match_path.group(1)}.tif', status=404)
+    
+    # トークンの検査
+    token = getTokenFromFile(sourceFile)
+    if token is not None and token != '':
+        req_token = request.headers.get('token')
+        if req_token != token:
+            return HttpResponse('Unauthorized: Invalid token.', status=401)
+
     fname = generateCacheFileName(bbox, width, height)
+    outdir = os.path.normpath(f'{settings.WMS_OUTPUT_FOLDER}/{match_path.group(1)}/')
+    if not os.path.exists(outdir):
+        os.makedirs(outdir, exist_ok=True)
     outFile = os.path.normpath(f'{settings.WMS_OUTPUT_FOLDER}/{match_path.group(1)}/{fname}')
 
     # ソース画像のタイムスタンプ取得
