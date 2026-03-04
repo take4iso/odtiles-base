@@ -69,4 +69,4 @@ def setCapabilities(request):
 
     create(base_url, data['layers'], f'{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/.wms/capabilities.xml')
 
-    return HttpResponse(f'WMSを有効にしました\n{base_url}?SERVICE=wms&REQUEST=GetCapabilities&VERSION=1.1.1', status=200)
+    return HttpResponse(f'WMSを有効にしました\n{base_url}SERVICE=wms&REQUEST=GetCapabilities&VERSION=1.1.1', status=200)
