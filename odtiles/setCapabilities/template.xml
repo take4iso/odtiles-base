@@ -31,5 +31,9 @@
     <Exception>
       <Format>application/vnd.ogc.se_xml</Format>
     </Exception>
+    <Layer>
+      <Title>WMS by odtiles</Title>
+      <SRS>EPSG:3857</SRS>
+    </Layer>
   </Capability>
 </WMT_MS_Capabilities>

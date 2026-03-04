@@ -27,7 +27,7 @@ def updateCapabilities(base_url="http://localhost:8000/wms", layers=None):
 
     # 新しいレイヤーの追加 (ユーザーのリクエスト)
     # 親となる Layer 要素を取得
-    parent_layer = root.find('.//Capability')
+    parent_layer = root.find('.//Capability//Layer')
     if parent_layer is not None:
         for layer in layers :
             new_layer = ET.SubElement(parent_layer, 'Layer')
