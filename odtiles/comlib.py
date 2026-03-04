@@ -109,7 +109,7 @@ def generateImage(bbox, width, height, sourceFile, srcinfo, outFile):
     if not isBboxOverlap(source_bbox, bbox, pixel_width, pixel_height):
         return False  
     # GDALを使用してWMS画像を生成
-    gdal.Warp(
+    dst_ds = gdal.Warp(
         outFile,
         sourceFile,
         format='PNG',
@@ -119,4 +119,13 @@ def generateImage(bbox, width, height, sourceFile, srcinfo, outFile):
         dstSRS='EPSG:3857',
         resampleAlg='bilinear'
     )
+    # データセットが作成されたか確認
+    if dst_ds is None:
+        return False
+    # データセットを明示的に閉じて、書き込みが完了するまで待つ
+    dst_ds.FlushCache()
+    dst_ds = None
+    # ファイルが実際に作成されたか確認
+    if not os.path.exists(outFile):
+        return False
     return True

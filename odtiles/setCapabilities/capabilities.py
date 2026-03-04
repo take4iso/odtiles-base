@@ -23,7 +23,7 @@ def updateCapabilities(base_url="http://localhost:8000/wms", layers=None):
     # すべての OnlineResource の URL を更新
     xlink_href = '{http://www.w3.org/1999/xlink}href'
     for onlineResource in root.findall('.//OnlineResource'):
-        onlineResource.attrib[xlink_href] = base_url+'?'
+        onlineResource.attrib[xlink_href] = base_url
 
     # 新しいレイヤーの追加 (ユーザーのリクエスト)
     # 親となる Layer 要素を取得
@@ -37,10 +37,17 @@ def updateCapabilities(base_url="http://localhost:8000/wms", layers=None):
             ET.SubElement(new_layer, 'Title').text = layer['title']
             ET.SubElement(new_layer, 'SRS').text = 'EPSG:3857'
             
-            # 属性を持つサブエレメントを追加
-            ET.SubElement(new_layer, 'LatLonBoundingBox', {
-                'minx': '-180', 'miny': '-90', 'maxx': '180', 'maxy': '90'
-            })
+            if layer.get('lonlat_bbox') is not None:
+                lonlat_bbox = layer['lonlat_bbox']
+                ET.SubElement(new_layer, 'LatLonBoundingBox', {
+                    'minx': str(lonlat_bbox[0]), 'miny': str(lonlat_bbox[1]), 
+                    'maxx': str(lonlat_bbox[2]), 'maxy': str(lonlat_bbox[3])
+                })
+            else:
+                # 属性を持つサブエレメントを追加
+                ET.SubElement(new_layer, 'LatLonBoundingBox', {
+                    'minx': '-180', 'miny': '-90', 'maxx': '180', 'maxy': '90'
+                })
 
             #スタイルサブエレメント
             if layer.get('legendUrl') is not None:

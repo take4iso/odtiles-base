@@ -1,24 +1,29 @@
 from django.test import TestCase
 from django.conf import settings
-from .views import get_bbox, is_bbox_overlap, xyz_to_mercator_bbox, create_ondemand_tiles
+from comlib import getGeotiffInfo, isBboxOverlap, xyzToMercatorBbox
 # Create your tests here.
 
 def test_get_bbox():
     testdata = settings.BASE_DIR / 'debugdata/testdata.tif'
-    bbox = get_bbox(testdata)
-    assert bbox == [120.5, 21.000000000000224, 148.99999999997408, 46.66666666666667]
+    info = getGeotiffInfo(testdata)
+    bbox = info['lonlat_bbox']
+    # 浮動小数点の精度を考慮した比較
+    assert abs(bbox[0] - 120.5) < 1e-10
+    assert abs(bbox[1] - 21.0) < 1e-10
+    assert abs(bbox[2] - 149.0) < 1e-10
+    assert abs(bbox[3] - 46.666666666666667) < 1e-10
 
 def test_xyz_to_mercator_bbox1():
-    bbox = xyz_to_mercator_bbox(0, 0, 0)
+    bbox = xyzToMercatorBbox(0, 0, 0)
     assert bbox == [-20037508.342789244, -20037508.342789244, 20037508.342789244, 20037508.342789244]
 
 def test_xyz_to_mercator_bbox2():
-    bbox = xyz_to_mercator_bbox(6, 57, 27)
+    bbox = xyzToMercatorBbox(6, 57, 27)
     print(bbox)
     assert bbox == [-20037506.551296394, 20037491.02502502, -20037506.25271425, 20037491.323607165]
 
 def test_is_bbox_overlap():
-    assert is_bbox_overlap([0, 0, 10, 10], [5, 5, 15, 15]) == True
-    assert is_bbox_overlap([0, 0, 10, 10], [10, 10, 20, 20]) == False
-    assert is_bbox_overlap([0, 0, 10, 10], [-5, -5, 5, 5]) == True
-    assert is_bbox_overlap([0, 0, 10, 10], [-5, -5, -1, -1]) == False
+    assert isBboxOverlap([0, 0, 10, 10], [5, 5, 15, 15]) == True
+    assert isBboxOverlap([0, 0, 10, 10], [10, 10, 20, 20]) == False
+    assert isBboxOverlap([0, 0, 10, 10], [-5, -5, 5, 5]) == True
+    assert isBboxOverlap([0, 0, 10, 10], [-5, -5, -1, -1]) == False

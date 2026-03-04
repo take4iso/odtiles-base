@@ -1,60 +1,37 @@
-import re, os
+import re, os, math
 from urllib.parse import urlparse, parse_qs
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.conf import settings
-from osgeo import gdal
+from comlib import getGeotiffInfo, isBboxOverlap, generateImage
 
-gdal.UseExceptions()
+#有効桁を返す
+def significant_figures(min_val: float, max_val: float, size: int) -> int:
+    if min_val == max_val:
+        return 0
+    pixel_size = (max_val - min_val) / size
+    sig_figs = -int(math.floor(math.log10(abs(pixel_size))))
+    return sig_figs
 
-# GeoTIFFの範囲（bbox）を取得する
-def get_bbox(sourceFile):
-    """GeoTIFFの範囲（bbox）を取得する"""
-    if not os.path.exists(sourceFile):
-        return None
-    ds = gdal.Open(sourceFile)
-    gt = ds.GetGeoTransform()
-    x_min = gt[0]
-    y_max = gt[3]
-    x_max = x_min + gt[1] * ds.RasterXSize
-    y_min = y_max + gt[5] * ds.RasterYSize
-    return [x_min, y_min, x_max, y_max]
+#有効桁数を調べて、bboxの座標を有効桁数で丸める
+def round_significant_figures(bbox, width, height):
+    # pwの桁数を調べる
+    pw_sig_figs = significant_figures(bbox[0], bbox[2], width)
+    ph_sig_figs = significant_figures(bbox[1], bbox[3], height)
+    # bboxの座標を有効桁数で丸める
+    rounded_bbox = [
+        round(bbox[0], pw_sig_figs),
+        round(bbox[1], ph_sig_figs),
+        round(bbox[2], pw_sig_figs),
+        round(bbox[3], ph_sig_figs)
+    ]
+    return rounded_bbox
 
-# 2つのbboxが重なっているかを判定する
-def is_bbox_overlap(bbox1, bbox2):
-    """2つのbboxが重なっているかを判定する"""
-    if bbox1[0] >= bbox2[2] or bbox1[2] <= bbox2[0] or bbox1[1] >= bbox2[3] or bbox1[3] <= bbox2[1]:
-        return False
-    return True
 
-# WMS画像を生成する
-def generate_wms_image(bbox, width, height, sourceFile, outFile):
-    """WMS画像を生成する"""
-    #ソースファイルがあるか？
-    if not os.path.exists(sourceFile):
-        return False
-    
-    # ソースファイルのbboxを取得
-    source_bbox = get_bbox(sourceFile)
-    if source_bbox is None:
-        return False
-    # ソースファイルのbboxとリクエストされたbboxが重なっているか？
-    if not is_bbox_overlap(source_bbox, bbox):
-        return False
-    
-    # GDALを使用してWMS画像を生成
-    gdal.Warp(
-        outFile,
-        sourceFile,
-        format='PNG',
-        outputBounds=bbox,
-        width=width,
-        height=height,
-        dstSRS='EPSG:3857',
-        resampleAlg='bilinear'
-    )
-    return True
-
+# キャッシュファイル名の生成
+def generateCacheFileName(bbox, width, height):
+    rbbox = round_significant_figures(bbox, width, height)
+    return f'{rbbox[0]}_{rbbox[1]}_{rbbox[2]}_{rbbox[3]}_{width}_{height}.png'
 
 # WMSの応答
 def wms(request):
@@ -128,18 +105,19 @@ def wms(request):
 
     # WMS画像の生成
     sourceFile = os.path.normpath(f'{settings.TILE_SOURCE_FOLDER}/{match_path.group(1)}/{layers[0]}.tif')
-    outFile = os.path.normpath(f'{settings.WMS_OUTPUT_FOLDER}/{match_path.group(1)}/{bbox[0]}.{bbox[1]}.{bbox[2]}.{bbox[3]}.{width}.{height}.png')
+    fname = generateCacheFileName(bbox, width, height)
+    outFile = os.path.normpath(f'{settings.WMS_OUTPUT_FOLDER}/{match_path.group(1)}/{fname}')
 
     # ソース画像のタイムスタンプ取得
-    stime = os.path.getmtime(sourceFile)
+    srcinfo = getGeotiffInfo(sourceFile)
 
     if os.path.exists(outFile):
         # WMS画像のタイムスタンプ取得
         ttime = os.path.getmtime(outFile)
-        if ttime < stime:
-            generate_wms_image(bbox, width, height, sourceFile, outFile)
+        if ttime < srcinfo['filestamp']:
+            generateImage(bbox, width, height, sourceFile, srcinfo, outFile)
     else:
-        generate_wms_image(bbox, width, height, sourceFile, outFile)
+        generateImage(bbox, width, height, sourceFile, srcinfo, outFile)
         
     if os.path.exists(outFile):
         # ブラウザキャッシュの期間を設定
