@@ -131,26 +131,40 @@ def generateImage(bbox, width, height, sourceFile, srcinfo, outFile):
     return True
 
 
-# トークンファイルを設定する
-def setTokenFile(token: str, srcfile: str):
-    """トークンがない場合はトークンファイルを削除する。トークンがある場合はトークンファイルに書き込む。"""
+# キーファイルを設定する
+def setKeyFile(apikey: str, srcfile: str):
+    """APIキーがない場合はキーファイルを削除する。APIキーがある場合はキーファイルに書き込む。"""
     if not os.path.exists(srcfile):
         return False
-    tokenfile = f'{srcfile}.token'
-    if token is None or token == '':
-        if os.path.exists(tokenfile):
-            os.remove(tokenfile)
+    keyfile = f'{srcfile}.apikey'
+    if apikey is None or apikey == '':
+        if os.path.exists(keyfile):
+            os.remove(keyfile)
         return True
-    with open(tokenfile, 'w', encoding='utf-8') as f:
-        f.write(token)
+    with open(keyfile, 'w', encoding='utf-8') as f:
+        f.write(apikey.strip())
     return True
 
-# トークンファイルを読み込む
-def getTokenFromFile(srcfile: str):
-    """トークンファイルからトークンを読み込む。トークンファイルがない場合はNoneを返す。"""
-    tokenfile = f'{srcfile}.token'
-    if not os.path.exists(tokenfile):
+# キーファイルを読み込む
+def getKeyFromFile(srcfile: str):
+    """キーファイルからAPIキーを読み込む。キーファイルがない場合はNoneを返す。"""
+    keyfile = f'{srcfile}.apikey'
+    if not os.path.exists(keyfile):
         return None
-    with open(tokenfile, 'r', encoding='utf-8') as f:
-        token = f.read().strip()
-    return token
+    with open(keyfile, 'r', encoding='utf-8') as f:
+        apikey = f.read().strip()
+    return apikey
+
+# wms.xmlファイルを設定する
+def setWmsXmlFile(data, srcfile):
+    """WMSのXMLファイルを設定する。dataがNoneの場合はXMLファイルを削除する。dataがある場合はXMLファイルに書き込む。"""
+    if not os.path.exists(srcfile):
+        return False
+    wmsfile = f'{srcfile}.wms.xml'
+    if data is None:
+        if os.path.exists(wmsfile):
+            os.remove(wmsfile)
+        return True
+    with open(wmsfile, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+    return True

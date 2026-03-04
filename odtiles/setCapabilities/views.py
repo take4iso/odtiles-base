@@ -5,7 +5,7 @@ from django.http import HttpResponse
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from .capabilities import create
-from comlib import getGeotiffInfo, isBboxOverlap, setTokenFile
+from comlib import getGeotiffInfo, isBboxOverlap, setKeyFile
 
 
 # Capabilitiesの設定
@@ -48,11 +48,13 @@ def setCapabilities(request):
         return HttpResponse(message, status=400)
 
     # dataのメンバーがあるかをチェック
-    if data.keys() is None:
+    if len(data.keys()) == 0:
         # WMSを無効にする
         if os.path.exists(f'{settings.TILE_SOURCE_FOLDER}/{subpath}.wms.xml'):
             os.remove(f'{settings.TILE_SOURCE_FOLDER}/{subpath}.wms.xml')
-        return HttpResponse('WMSを無効にしました', status=200)
+        # キーファイルも削除する
+        setKeyFile(None, srcfile)
+        return HttpResponse('WMSを無効にしました\nAPIキーを無効にしました', status=200)
 
     # dataにlatlon_bboxを追加する
     info = getGeotiffInfo(srcfile)
@@ -62,9 +64,9 @@ def setCapabilities(request):
     data['lonlat_bbox'] = info['lonlat_bbox']
     data['name'] = subpath.split('/')[-1]
 
-    #トークンファイルを設定する
-    token = data.get('token')
-    setTokenFile(token, srcfile)
+    #キーファイルを設定する
+    apikey = data.get('apikey')
+    setKeyFile(apikey, srcfile)
     
     # フォルダ作成
     os.makedirs(f'{settings.WMS_OUTPUT_FOLDER}/{subpath}/', exist_ok=True)
@@ -72,4 +74,9 @@ def setCapabilities(request):
     # WMSを有効にする
     base_url = settings.URL + '/wms/' + subpath + '?'
     create(base_url, data, f'{settings.TILE_SOURCE_FOLDER}/{subpath}.wms.xml')
-    return HttpResponse(f'WMSを有効にしました\n{base_url}SERVICE=wms&REQUEST=GetCapabilities&VERSION=1.1.1', status=200)
+    
+    if apikey is not None and apikey != '':
+        message = f'WMSを有効にしました\n{base_url}SERVICE=wms&REQUEST=GetCapabilities&VERSION=1.1.1\nAPIキーを設定しました'
+    else:
+        message = f'WMSを有効にしました\n{base_url}SERVICE=wms&REQUEST=GetCapabilities&VERSION=1.1.1\nAPIキーを無効にしました' 
+    return HttpResponse(message, status=200)

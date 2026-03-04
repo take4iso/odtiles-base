@@ -27,7 +27,7 @@ def updateCapabilities(base_url="http://localhost:8000/wms", data=None):
 
     # Service タグの Title を更新
     service_title = root.find('.//Service/Title')
-    if service_title is not None:
+    if service_title is not None and data is not None and data.get('title') is not None:
         service_title.text = data['title']
     # 新しいレイヤーの追加 (ユーザーのリクエスト)
     # 親となる Layer 要素を取得
@@ -36,8 +36,10 @@ def updateCapabilities(base_url="http://localhost:8000/wms", data=None):
         new_layer = ET.SubElement(parent_layer, 'Layer')
         
         # サブエレメントを追加
-        ET.SubElement(new_layer, 'Name').text = str(data['name'])
-        ET.SubElement(new_layer, 'Title').text = data['title']
+        if data.get('name') is not None :
+            ET.SubElement(new_layer, 'Name').text = str(data['name'])
+        if data.get('title') is not None:
+            ET.SubElement(new_layer, 'Title').text = str(data['title'])
         ET.SubElement(new_layer, 'SRS').text = 'EPSG:3857'
         
         if data.get('lonlat_bbox') is not None:

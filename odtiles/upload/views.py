@@ -1,10 +1,10 @@
 
-import os, re, shutil, tempfile
+import os, re, shutil, tempfile, json
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
-
+from comlib import getGeotiffInfo, isBboxOverlap, setKeyFile
 
 # タイル画像のアップロード
 @csrf_exempt
@@ -42,8 +42,12 @@ def geotiff_upload(request):
         match = re.match(pattern, request.path)
 
         # ファイルの移動
-        os.makedirs(os.path.normpath(f'{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/'), exist_ok=True)
-        shutil.move(os.path.normpath(f'{tmpdir}/{file_name}'), os.path.normpath(f'{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/{file_name}'))
+        datadir = os.path.normpath(f'{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/')
+        datafile = os.path.normpath(f'{datadir}/{file_name}')
+        os.makedirs(datadir, exist_ok=True)
+        shutil.move(os.path.normpath(f'{tmpdir}/{file_name}'), datafile)
         
         # タイル画像のパスが存在するか確認
-        return HttpResponse(f'uploaded {os.path.normpath(f"{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/{file_name}")}', status=200)
+        return HttpResponse(f'uploaded {datafile}', status=200)
+    
+    return HttpResponse('Unknown error', status=500)

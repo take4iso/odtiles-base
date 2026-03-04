@@ -2,7 +2,7 @@ import os, re, math
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.conf import settings
-from comlib import xyzToMercatorBbox, generateImage, getGeotiffInfo, isBboxOverlap
+from comlib import xyzToMercatorBbox, generateImage, getGeotiffInfo, isBboxOverlap, getKeyFromFile
 
 
 
@@ -30,6 +30,13 @@ def tileimage(request):
     if not os.path.exists(sourcefile):
         return HttpResponse("Not Found", status=404)
     
+    # APIキーの検査
+    key = getKeyFromFile(sourcefile)
+    if key is not None and key != '':
+        req_key = request.headers.get('apikey')
+        if req_key != key:
+            return HttpResponse('Unauthorized: Invalid API key.', status=401)
+
     # ソース画像のタイムスタンプ取得
     stime = os.path.getmtime(sourcefile)
     srcinfo = getGeotiffInfo(sourcefile)

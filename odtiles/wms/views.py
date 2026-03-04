@@ -3,7 +3,7 @@ from urllib.parse import urlparse, parse_qs
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.conf import settings
-from comlib import getGeotiffInfo, isBboxOverlap, generateImage, getTokenFromFile
+from comlib import getGeotiffInfo, isBboxOverlap, generateImage, getKeyFromFile
 
 #有効桁を返す
 def significant_figures(min_val: float, max_val: float, size: int) -> int:
@@ -107,12 +107,12 @@ def wms(request):
     if not os.path.exists(sourceFile):
         return HttpResponse(f'Source file not found: {match_path.group(1)}.tif', status=404)
     
-    # トークンの検査
-    token = getTokenFromFile(sourceFile)
-    if token is not None and token != '':
-        req_token = request.headers.get('token')
-        if req_token != token:
-            return HttpResponse('Unauthorized: Invalid token.', status=401)
+    # APIキーの検査
+    key = getKeyFromFile(sourceFile)
+    if key is not None and key != '':
+        req_key = request.headers.get('apikey')
+        if req_key != key:
+            return HttpResponse('Unauthorized: Invalid API key.', status=401)
 
     fname = generateCacheFileName(bbox, width, height)
     outdir = os.path.normpath(f'{settings.WMS_OUTPUT_FOLDER}/{match_path.group(1)}/')
