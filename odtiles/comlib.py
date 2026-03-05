@@ -8,7 +8,13 @@ from osgeo import gdal
 gdal.UseExceptions()
 
 originShift = 20037508.342789244
+MAX_MERCATOR_LAT = 85.051129  # メルカトル投影の最大緯度
 
+
+# 緯度をメルカトル投影の有効範囲にクリップ
+def clampLatitude(lat):
+    """Clamp latitude to valid Mercator projection bounds"""
+    return max(-MAX_MERCATOR_LAT, min(MAX_MERCATOR_LAT, lat))
 
 # GeoTIFFの情報を取得する
 def getGeotiffInfo(sourceFile):
@@ -25,9 +31,12 @@ def getGeotiffInfo(sourceFile):
     y_min = y_max + gt[5] * ds.RasterYSize
     #メルカトル座標に変換
     minX = x_min * originShift / 180.0
-    minY = math.log(math.tan((90 + y_min) * math.pi / 360.0)) * originShift / math.pi
+    # 緯度をクリップしてから計算
+    y_min_clamped = clampLatitude(y_min)
+    minY = math.log(math.tan((90 + y_min_clamped) * math.pi / 360.0)) * originShift / math.pi
     maxX = x_max * originShift / 180.0
-    maxY = math.log(math.tan((90 + y_max) * math.pi / 360.0)) * originShift / math.pi
+    y_max_clamped = clampLatitude(y_max)
+    maxY = math.log(math.tan((90 + y_max_clamped) * math.pi / 360.0)) * originShift / math.pi
     srcbbox = [minX, minY, maxX, maxY]
     lonlat_bbox = mercatorBboxToLonlatBbox(srcbbox)
     # ピクセルサイズを取得
