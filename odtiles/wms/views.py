@@ -1,4 +1,4 @@
-import re, os, math
+import re, os, math, requests
 from urllib.parse import urlparse, parse_qs
 from django.shortcuts import render
 from django.http import HttpResponse
@@ -27,6 +27,22 @@ def round_significant_figures(bbox, width, height):
     ]
     return rounded_bbox
 
+# capabilitiesファイルからLegendURLを取得する
+def getLegendURL(capabilities):
+    with open(capabilities, 'r', encoding='utf-8') as f:
+        content = f.read()
+        match = re.search(r'<LegendURL>.*?<OnlineResource .*?xlink:href="(.*?)".*?</LegendURL>', content, re.DOTALL)
+        if match:
+            return match.group(1)
+    return None
+
+# LegendURLの画像をダウンロードしてレスポンスする
+def legend(legend_url):
+    response = requests.get(legend_url)
+    if response.status_code == 200:
+        return HttpResponse(response.content, content_type='image/png')
+    else:
+        return HttpResponse('Failed to fetch legend image', status=500)
 
 # キャッシュファイル名の生成
 def generateCacheFileName(bbox, width, height):
@@ -62,16 +78,24 @@ def wms(request):
         return HttpResponse('Invalid service parameter. Must be WMS.', status=400)
 
     # パラメータのバリデーション
-    if request.GET['REQUEST'].upper() != 'GETMAP' and request.GET['REQUEST'].upper() != 'GETCAPABILITIES':
-        return HttpResponse('Invalid request parameter. Must be GetMap or GetCapabilities.', status=400)
+    req = request.GET['REQUEST'].upper()
+    if req != 'GETMAP' and req != 'GETCAPABILITIES' and req != 'GETLEGENDGRAPHIC':
+        return HttpResponse('Invalid request parameter. Must be GetMap, GetCapabilities, or GetLegendGraphic.', status=400)
 
     # Capabilitiesを返す
-    if request.GET['REQUEST'].upper() == 'GETCAPABILITIES':
+    if req == 'GETCAPABILITIES':
         with open(capabilities, 'r', encoding='utf-8') as f:
             res = HttpResponse(f.read(), content_type='application/xml', charset='utf-8' )
             res['Content-Disposition'] = f'inline; filename="wms.xml"'
             return res
 
+    # LegendURLを取得して、LegendGraphicを返す
+    if req == 'GETLEGENDGRAPHIC':
+        legend_url = getLegendURL(capabilities)
+        if legend_url is not None:
+            return legend(legend_url)
+        else:
+            return HttpResponse('LegendURL not found in capabilities file', status=404)
 
     # GetMapの必須パラメータのチェック
     required_params = ['LAYERS', 'BBOX', 'WIDTH', 'HEIGHT', 'FORMAT']
@@ -80,7 +104,10 @@ def wms(request):
             return HttpResponse(f'Missing required parameter: {param}', status=400)
 
     version = request.GET['VERSION'].upper()
-    layers = request.GET['LAYERS'].split(',')
+    
+    # layersは使用しない（もともと1レイヤーしかないため）けど、必須パラメータなのでチェックだけする
+    # layers = request.GET['LAYERS'].split(',')
+
     if 'CRS' in request.GET:
         crs = str(request.GET['CRS']).upper()
     if 'SRS' in request.GET:

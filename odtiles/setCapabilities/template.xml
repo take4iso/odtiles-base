@@ -27,6 +27,16 @@
           </HTTP>
         </DCPType>
       </GetMap>
+      <GetLegendGraphic>
+        <Format>image/png</Format>
+        <DCPType>
+          <HTTP>
+            <Get>
+              <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="http://localhost:8000/wms" />
+            </Get>
+          </HTTP>
+        </DCPType>
+      </GetLegendGraphic>
     </Request>
     <Exception>
       <Format>application/vnd.ogc.se_xml</Format>
