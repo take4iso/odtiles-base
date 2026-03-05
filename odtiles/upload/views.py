@@ -27,27 +27,20 @@ def geotiff_upload(request):
         message = '[ERROR]アップロードされたファイルの識別子が.tifではありません。'
         return HttpResponse(message, status=400)
     
-    # POSTリクエストのファイルを保存する
-    with tempfile.TemporaryDirectory() as tmpdir:
-        # 拡張子を小文字に変換
-        base_name, ext = os.path.splitext(file.name)
-        file_name = base_name + ext.lower()
-        # ファイルを保存する
-        with open(f'{tmpdir}/{file_name}', 'wb+') as destination:
-            for chunk in file.chunks():
-                destination.write(chunk)
-        
-        # URLパターンを正規表現で解析
-        pattern = r'^/upload/(.*)'
-        match = re.match(pattern, request.path)
+    # URLパターンを正規表現で解析
+    pattern = r'^/upload/(.*)/+$'
+    match = re.match(pattern, request.path)
+    datadir = os.path.normpath(f'{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/')
+    os.makedirs(datadir, exist_ok=True)
+    # 拡張子を小文字に変換
+    base_name, ext = os.path.splitext(file.name)
+    file_name = base_name + ext.lower()
+    # データファイルと凡例ファイルのパスを生成
+    datafile = os.path.normpath(f'{datadir}/{file_name}')
 
-        # ファイルの移動
-        datadir = os.path.normpath(f'{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/')
-        datafile = os.path.normpath(f'{datadir}/{file_name}')
-        os.makedirs(datadir, exist_ok=True)
-        shutil.move(os.path.normpath(f'{tmpdir}/{file_name}'), datafile)
-        
-        # タイル画像のパスが存在するか確認
-        return HttpResponse(f'uploaded {datafile}', status=200)
-    
-    return HttpResponse('Unknown error', status=500)
+    # POSTリクエストのファイルを保存する
+    # ファイルを保存する
+    with open(datafile, 'wb+') as destination:
+        for chunk in file.chunks():
+            destination.write(chunk)
+    return HttpResponse(f'uploaded {datafile}', status=200)
