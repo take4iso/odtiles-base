@@ -137,7 +137,9 @@ def wms(request):
     # APIキーの検査
     key = getKeyFromFile(sourceFile)
     if key is not None and key != '':
-        req_key = request.headers.get('apikey')
+        req_key = request.GET.get('APIKey')
+        if req_key is None:
+            return HttpResponse('Unauthorized: API key required.', status=401)
         if req_key != key:
             return HttpResponse('Unauthorized: Invalid API key.', status=401)
 
