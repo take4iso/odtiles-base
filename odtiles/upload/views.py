@@ -4,9 +4,8 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
-from comlib import getGeotiffInfo, isBboxOverlap, setKeyFile
 
-# タイル画像のアップロード
+# GeoTIFFのアップロード
 @csrf_exempt
 def geotiff_upload(request):
     if request.method != 'POST':
@@ -31,6 +30,7 @@ def geotiff_upload(request):
     pattern = r'^/upload/(.*)/+$'
     match = re.match(pattern, request.path)
     datadir = os.path.normpath(f'{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/')
+    # データディレクトリを作成
     os.makedirs(datadir, exist_ok=True)
     # 拡張子を小文字に変換
     base_name, ext = os.path.splitext(file.name)
@@ -39,8 +39,16 @@ def geotiff_upload(request):
     datafile = os.path.normpath(f'{datadir}/{file_name}')
 
     # POSTリクエストのファイルを保存する
-    # ファイルを保存する
-    with open(datafile, 'wb+') as destination:
-        for chunk in file.chunks():
-            destination.write(chunk)
-    return HttpResponse(f'uploaded {datafile}', status=200)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # ファイルを保存する
+        with open(f'{tmpdir}/{file_name}', 'wb+') as destination:
+            for chunk in file.chunks():
+                destination.write(chunk)
+        
+        # ファイルの移動
+        shutil.move(os.path.normpath(f'{tmpdir}/{file_name}'), datafile)
+        
+        # タイル画像のパスが存在するか確認
+        return HttpResponse(f'uploaded {datafile}', status=200)
+    
+    return HttpResponse('Unknown error', status=500)

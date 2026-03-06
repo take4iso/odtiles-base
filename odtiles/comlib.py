@@ -3,88 +3,51 @@ import os, re, math, json
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.conf import settings
-from osgeo import gdal
+from osgeo import gdal, osr
 
 gdal.UseExceptions()
 
 originShift = 20037508.342789244
-MAX_MERCATOR_LAT = 85.051129  # メルカトル投影の最大緯度
 
-
-# 緯度をメルカトル投影の有効範囲にクリップ
-def clampLatitude(lat):
-    """Clamp latitude to valid Mercator projection bounds"""
-    return max(-MAX_MERCATOR_LAT, min(MAX_MERCATOR_LAT, lat))
-
-# GeoTIFFの情報を取得する
-def getGeotiffInfo(sourceFile):
-    """infoファイルを作成する"""
-    if not os.path.exists(sourceFile):
+# GeoTIFFの範囲（bbox)をEPSG:4326で取得する
+def getLonlatBbox(filepath: str):
+    """GeoTIFFの範囲（bbox)をEPSG:4326で取得する"""
+    if not os.path.exists(filepath):
         return None
-    stime = os.path.getmtime(sourceFile)
-    # GeoTIFFの範囲（bbox）を取得する
-    ds = gdal.Open(sourceFile)
+    ds = gdal.Open(filepath)
     gt = ds.GetGeoTransform()
-    x_min = gt[0]
-    y_max = gt[3]
-    x_max = x_min + gt[1] * ds.RasterXSize
-    y_min = y_max + gt[5] * ds.RasterYSize
-    #メルカトル座標に変換
-    minX = x_min * originShift / 180.0
-    # 緯度をクリップしてから計算
-    y_min_clamped = clampLatitude(y_min)
-    minY = math.log(math.tan((90 + y_min_clamped) * math.pi / 360.0)) * originShift / math.pi
-    maxX = x_max * originShift / 180.0
-    y_max_clamped = clampLatitude(y_max)
-    maxY = math.log(math.tan((90 + y_max_clamped) * math.pi / 360.0)) * originShift / math.pi
-    srcbbox = [minX, minY, maxX, maxY]
-    lonlat_bbox = mercatorBboxToLonlatBbox(srcbbox)
-    # ピクセルサイズを取得
-    pixel_width = abs(gt[1])
-    pixel_height = abs(gt[5])
-    # infoファイルを書き込む
-    info = {
-        'bbox': srcbbox,
-        'lonlat_bbox': lonlat_bbox,
-        'filestamp': stime,
-        'pixel_width': pixel_width,
-        'pixel_height': pixel_height,
-        'raster_size': {
-            'width': ds.RasterXSize,
-            'height': ds.RasterYSize
-        }
-    }
-    return info
+    width = ds.RasterXSize
+    height = ds.RasterYSize
+    
+    # 四隅の座標を計算
+    ul = (gt[0], gt[3])                                     # 左上
+    ur = (gt[0] + gt[1] * width, gt[3])                     # 右上
+    ll = (gt[0], gt[3] + gt[5] * height)                    # 左下
+    lr = (gt[0] + gt[1] * width, gt[3] + gt[5] * height)    # 右下
+    
+    # EPSG4326に変換
+    src_srs = osr.SpatialReference()
+    src_srs.ImportFromWkt(ds.GetProjection())
+    dst_srs = osr.SpatialReference()
+    dst_srs.ImportFromEPSG(4326)
+    transform = osr.CoordinateTransformation(src_srs, dst_srs)
+    ul_wgs84 = transform.TransformPoint(*ul)
+    ur_wgs84 = transform.TransformPoint(*ur)
+    ll_wgs84 = transform.TransformPoint(*ll)
+    lr_wgs84 = transform.TransformPoint(*lr)
 
-# 2つのbboxが重なっているかを判定する
-def isBboxOverlap(bbox1, bbox2, pixel_width=0.0, pixel_height=0.0):
-    """2つのbboxが重なっているかを判定する
-    
-    Args:
-        bbox1: [min_x, min_y, max_x, max_y]
-        bbox2: [min_x, min_y, max_x, max_y]
-        pixel_width: ピクセルサイズ（X方向、許容マージン用）
-        pixel_height: ピクセルサイズ（Y方向、許容マージン用）
-    
-    Returns:
-        True: 重なっている、False: 重なっていない
-    """
-    # マージンを設定（ピクセルサイズを参考にしたマージン）
-    margin_x = pixel_width if pixel_width > 0 else 0.0
-    margin_y = pixel_height if pixel_height > 0 else 0.0
-    
-    # マージンを適用した判定
-    if (bbox1[0] - margin_x >= bbox2[2] + margin_x or 
-        bbox1[2] + margin_x <= bbox2[0] - margin_x or 
-        bbox1[1] - margin_y >= bbox2[3] + margin_y or 
-        bbox1[3] + margin_y <= bbox2[1] - margin_y):
-        return False
-    return True
+    x_min = min(ul_wgs84[0], ur_wgs84[0], ll_wgs84[0], lr_wgs84[0])
+    y_min = min(ul_wgs84[1], ur_wgs84[1], ll_wgs84[1], lr_wgs84[1])
+    x_max = max(ul_wgs84[0], ur_wgs84[0], ll_wgs84[0], lr_wgs84[0])
+    y_max = max(ul_wgs84[1], ur_wgs84[1], ll_wgs84[1], lr_wgs84[1])
 
-# XYZからメルカトル座標のBBOXを計算する
-def xyzToMercatorBbox(x, y, z):
+    return [x_min, y_min, x_max, y_max]
+
+# WebメルカトルのX,Y,Zoomからメルカトル座標のBBOXを計算する
+def xyzToMercatorBbox(x, y, zoom):
+    """Convert XYZ tile coordinates to Mercator bbox"""
     initialResolution = 2 * originShift / 256
-    resolution = initialResolution / (2 ** z)
+    resolution = initialResolution / (2 ** zoom)
 
     minX = x * 256 * resolution - originShift
     maxY = originShift - y * 256 * resolution
@@ -93,30 +56,13 @@ def xyzToMercatorBbox(x, y, z):
 
     return [minX, minY, maxX, maxY]
 
-# メルカトル座標のBBOXから経度緯度のBBOXを計算する
-def mercatorBboxToLonlatBbox(bbox):
-    minX = bbox[0] / originShift * 180.0
-    minY = math.atan(math.exp(bbox[1] / originShift * math.pi)) * 360.0 / math.pi - 90.0
-    maxX = bbox[2] / originShift * 180.0
-    maxY = math.atan(math.exp(bbox[3] / originShift * math.pi)) * 360.0 / math.pi - 90.0
-    return [minX, minY, maxX, maxY]
-
 # GDALのWARPでタイル画像を生成する
-def generateImage(bbox, width, height, sourceFile, srcinfo, outFile):
+def generateImage(bbox, width, height, sourceFile, outFile):
     """WMS画像を生成する"""
     #ソースファイルがあるか？
     if not os.path.exists(sourceFile):
         return False
-    
-    # ソースファイルのbboxを取得
-    if srcinfo is None:
-        return False
-    source_bbox = srcinfo['bbox']
-    pixel_width = srcinfo.get('pixel_width', 0.0)
-    pixel_height = srcinfo.get('pixel_height', 0.0)
-    # ソースファイルのbboxとリクエストされたbboxが重なっているか？
-    if not isBboxOverlap(source_bbox, bbox, pixel_width, pixel_height):
-        return False  
+        
     # GDALを使用してWMS画像を生成
     dst_ds = gdal.Warp(
         outFile,

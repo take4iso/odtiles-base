@@ -2,7 +2,7 @@ import os, re, math
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.conf import settings
-from comlib import xyzToMercatorBbox, generateImage, getGeotiffInfo, isBboxOverlap, getKeyFromFile
+from comlib import xyzToMercatorBbox, generateImage, getLonlatBbox, getKeyFromFile
 
 
 
@@ -39,19 +39,19 @@ def tileimage(request):
 
     # ソース画像のタイムスタンプ取得
     stime = os.path.getmtime(sourcefile)
-    srcinfo = getGeotiffInfo(sourcefile)
     tgbbox = xyzToMercatorBbox(x, y, zoom)
 
+
     if not os.path.exists(outfile):
-        if isBboxOverlap(srcinfo['bbox'], tgbbox, srcinfo.get('pixel_width', 0.0), srcinfo.get('pixel_height', 0.0)):
-            os.makedirs(outdir, exist_ok=True)
-            generateImage(tgbbox, 256, 256, sourcefile, srcinfo, outfile)
+        os.makedirs(outdir, exist_ok=True)
+        generateImage(tgbbox, 256, 256, sourcefile, outfile)
     else:
         # タイル画像のタイムスタンプ取得
         ttime = os.path.getmtime(outfile)
         if ttime < stime:
-            generateImage(tgbbox, 256, 256, sourcefile, srcinfo, outfile)
+            generateImage(tgbbox, 256, 256, sourcefile, outfile)
     
+
     if os.path.exists(outfile):
         # ブラウザキャッシュの期間を設定
         max_age = settings.MAX_AGE
@@ -62,4 +62,4 @@ def tileimage(request):
             res['Cache-Control'] = f'max-age={max_age}'
             return res
 
-    return HttpResponse("Not Found", status=404)
+    return HttpResponse("Not Found.", status=404)

@@ -5,7 +5,7 @@ from django.http import HttpResponse
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from .capabilities import create
-from comlib import getGeotiffInfo, isBboxOverlap, setKeyFile
+from comlib import getLonlatBbox, setKeyFile
 
 
 # Capabilitiesの設定
@@ -57,11 +57,7 @@ def setCapabilities(request):
         return HttpResponse('WMSを無効にしました\nAPIキーを無効にしました', status=200)
 
     # dataにlatlon_bboxを追加する
-    info = getGeotiffInfo(srcfile)
-    if info is None:
-        message = f'[ERROR]{subpath}.tifのフォーマットエラーです。'
-        return HttpResponse(message, status=400)     
-    data['lonlat_bbox'] = info['lonlat_bbox']
+    data['lonlat_bbox'] = getLonlatBbox(srcfile)
     data['name'] = subpath.split('/')[-1]
 
     #キーファイルを設定する

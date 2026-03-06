@@ -1,12 +1,11 @@
 from django.test import TestCase
 from django.conf import settings
-from comlib import getGeotiffInfo, isBboxOverlap, xyzToMercatorBbox
+from comlib import getLonlatBbox, xyzToMercatorBbox
 # Create your tests here.
 
 def test_get_bbox():
     testdata = settings.BASE_DIR / 'debugdata/testdata.tif'
-    info = getGeotiffInfo(testdata)
-    bbox = info['lonlat_bbox']
+    bbox = getLonlatBbox(testdata)
     # 浮動小数点の精度を考慮した比較
     assert abs(bbox[0] - 120.5) < 1e-10
     assert abs(bbox[1] - 21.0) < 1e-10
@@ -21,9 +20,3 @@ def test_xyz_to_mercator_bbox2():
     bbox = xyzToMercatorBbox(6, 57, 27)
     print(bbox)
     assert bbox == [-20037506.551296394, 20037491.02502502, -20037506.25271425, 20037491.323607165]
-
-def test_is_bbox_overlap():
-    assert isBboxOverlap([0, 0, 10, 10], [5, 5, 15, 15]) == True
-    assert isBboxOverlap([0, 0, 10, 10], [10, 10, 20, 20]) == False
-    assert isBboxOverlap([0, 0, 10, 10], [-5, -5, 5, 5]) == True
-    assert isBboxOverlap([0, 0, 10, 10], [-5, -5, -1, -1]) == False

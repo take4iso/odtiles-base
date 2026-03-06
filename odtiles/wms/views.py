@@ -3,7 +3,7 @@ from urllib.parse import urlparse, parse_qs
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.conf import settings
-from comlib import getGeotiffInfo, isBboxOverlap, generateImage, getKeyFromFile
+from comlib import generateImage, getKeyFromFile
 
 #有効桁を返す
 def significant_figures(min_val: float, max_val: float, size: int) -> int:
@@ -148,15 +148,15 @@ def wms(request):
     outFile = os.path.normpath(f'{settings.WMS_OUTPUT_FOLDER}/{match_path.group(1)}/{fname}')
 
     # ソース画像のタイムスタンプ取得
-    srcinfo = getGeotiffInfo(sourceFile)
+    stime = os.path.getmtime(sourceFile)
 
     if os.path.exists(outFile):
         # WMS画像のタイムスタンプ取得
         ttime = os.path.getmtime(outFile)
-        if ttime < srcinfo['filestamp']:
-            generateImage(bbox, width, height, sourceFile, srcinfo, outFile)
+        if ttime < stime:
+            generateImage(bbox, width, height, sourceFile, outFile)
     else:
-        generateImage(bbox, width, height, sourceFile, srcinfo, outFile)
+        generateImage(bbox, width, height, sourceFile, outFile)
         
     if os.path.exists(outFile):
         # ブラウザキャッシュの期間を設定
