@@ -81,7 +81,7 @@ XYZタイルのURLは以下になる
 
 #### curl コマンドの例
 ```
-curl -X POST http(s)://<サーバー名>/upload/aaa/bbb/ \
+curl -X POST http(s)://<ドメイン名>/upload/aaa/bbb/ \
     -H "token:<UPLOAD_API_TOKEN>" \
     -F "file=@/my/file/path/sample.tif"
 ```
@@ -137,7 +137,7 @@ http(s)://<ドメイン名>/wms/aaa/bbb/sample?SERVICE=WMS&REQUEST=GetCapabiliti
 
 #### curl コマンドの例
 ```
-curl -X POST http(s)://<サーバー名>/setCapabilities/aaa/bbb/sample \
+curl -X POST http(s)://<ドメイン名>/setCapabilities/aaa/bbb/sample \
     -H "token:<UPLOAD_API_TOKEN>" \
     -d '{}'
 ```
