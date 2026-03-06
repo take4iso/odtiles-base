@@ -3,7 +3,7 @@ from urllib.parse import urlparse, parse_qs
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.conf import settings
-from comlib import generateImage, getKeyFromFile
+from comlib import generateImage, getKeyFromFile, isBboxOverlap, getInfoFile
 
 #有効桁を返す
 def significant_figures(min_val: float, max_val: float, size: int) -> int:
@@ -146,6 +146,13 @@ def wms(request):
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
     outFile = os.path.normpath(f'{settings.WMS_OUTPUT_FOLDER}/{match_path.group(1)}/{fname}')
+
+    # 範囲判定
+    info = getInfoFile(sourceFile)
+    if info is None:
+        return HttpResponse(f'Not Found info file: {sourceFile}', status=404)
+    if not isBboxOverlap(bbox, info['mercatorBbox']):
+        return HttpResponse("WMS out of bounds.", status=404)
 
     # ソース画像のタイムスタンプ取得
     stime = os.path.getmtime(sourceFile)

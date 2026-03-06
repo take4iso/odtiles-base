@@ -5,7 +5,7 @@ from django.http import HttpResponse
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from .capabilities import create
-from comlib import getLonlatBbox, setKeyFile
+from comlib import getBbox, setKeyFile
 
 
 # Capabilitiesの設定
@@ -57,7 +57,9 @@ def setCapabilities(request):
         return HttpResponse('WMSを無効にしました\nAPIキーを無効にしました', status=200)
 
     # dataにlatlon_bboxを追加する
-    data['lonlat_bbox'] = getLonlatBbox(srcfile)
+    latlon_bbox, mercator_bbox = getBbox(srcfile)
+    data['latlon_bbox'] = latlon_bbox
+    data['mercator_bbox'] = mercator_bbox
     data['name'] = subpath.split('/')[-1]
 
     #キーファイルを設定する

@@ -2,7 +2,7 @@ import os, re, math
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.conf import settings
-from comlib import xyzToMercatorBbox, generateImage, getLonlatBbox, getKeyFromFile
+from comlib import xyzToMercatorBbox, generateImage, getKeyFromFile, getInfoFile, isBboxOverlap
 
 
 
@@ -20,6 +20,12 @@ def tileimage(request):
         return HttpResponse("Invalid tile request", status=400)
     
     sourcefile = os.path.normpath(settings.TILE_SOURCE_FOLDER + '/' +  match.group(1) + '.tif')
+    if not os.path.exists(sourcefile):
+        return HttpResponse("Not Found source file.", status=404)
+    info = getInfoFile(sourcefile)
+    if info is None:
+        return HttpResponse("Not Found info file.", status=404)
+
     zoom = int(match.group(2))
     x = int(match.group(3))
     y = int(match.group(4))
@@ -27,8 +33,6 @@ def tileimage(request):
     outdir = os.path.normpath(f"{settings.TILE_OUTPUT_FOLDER}/{match.group(1)}/{zoom}/{x}")
     outfile = os.path.normpath(f"{outdir}/{y}.png")
 
-    if not os.path.exists(sourcefile):
-        return HttpResponse("Not Found", status=404)
     
     # APIキーの検査
     key = getKeyFromFile(sourcefile)
@@ -41,6 +45,9 @@ def tileimage(request):
     stime = os.path.getmtime(sourcefile)
     tgbbox = xyzToMercatorBbox(x, y, zoom)
 
+    # タイルのBBOXとGeoTIFFのBBOXが重なっているかを確認する
+    if not isBboxOverlap(tgbbox, info['mercatorBbox']):
+        return HttpResponse("Tile out of bounds.", status=404)
 
     if not os.path.exists(outfile):
         os.makedirs(outdir, exist_ok=True)

@@ -4,6 +4,9 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
+from comlib import createInfoFile
+
+
 
 # GeoTIFFのアップロード
 @csrf_exempt
@@ -49,6 +52,7 @@ def geotiff_upload(request):
         shutil.move(os.path.normpath(f'{tmpdir}/{file_name}'), datafile)
         
         # タイル画像のパスが存在するか確認
+        createInfoFile(datafile)
         return HttpResponse(f'uploaded {datafile}', status=200)
     
     return HttpResponse('Unknown error', status=500)
