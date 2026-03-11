@@ -12,7 +12,7 @@ from comlib import getBbox, setKeyFile
 @csrf_exempt
 def setCapabilities(request):
     # URLパターンを正規表現で解析
-    pattern = r'^/setCapabilities/(.*)$'
+    pattern = r'^/setCapabilities/(.*?)/*$'
     match = re.match(pattern, request.path)
     if match is None:
         return HttpResponse('Bad Request', status=400)
@@ -56,10 +56,10 @@ def setCapabilities(request):
         setKeyFile(None, srcfile)
         return HttpResponse('WMSを無効にしました\nAPIキーを無効にしました', status=200)
 
-    # dataにlatlon_bboxを追加する
+    # dataにlatlonBboxとmercatorBboxを追加する
     latlon_bbox, mercator_bbox = getBbox(srcfile)
-    data['latlon_bbox'] = latlon_bbox
-    data['mercator_bbox'] = mercator_bbox
+    data['latlonBbox'] = latlon_bbox
+    data['mercatorBbox'] = mercator_bbox
     data['name'] = subpath.split('/')[-1]
 
     #キーファイルを設定する

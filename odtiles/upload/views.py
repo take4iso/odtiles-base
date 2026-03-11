@@ -30,7 +30,7 @@ def geotiff_upload(request):
         return HttpResponse(message, status=400)
     
     # URLパターンを正規表現で解析
-    pattern = r'^/upload/(.*)/+$'
+    pattern = r'^/upload/(.*?)/*$'
     match = re.match(pattern, request.path)
     datadir = os.path.normpath(f'{settings.TILE_SOURCE_FOLDER}/{match.group(1)}/')
     # データディレクトリを作成

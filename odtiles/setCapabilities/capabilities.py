@@ -42,11 +42,11 @@ def updateCapabilities(base_url="http://localhost:8000/wms", data=None):
             ET.SubElement(new_layer, 'Title').text = str(data['title'])
         ET.SubElement(new_layer, 'SRS').text = 'EPSG:3857'
         
-        if data.get('lonlat_bbox') is not None:
-            lonlat_bbox = data['lonlat_bbox']
+        if data.get('latlonBbox') is not None:
+            latlon_bbox = data['latlonBbox']
             ET.SubElement(new_layer, 'LatLonBoundingBox', {
-                'minx': str(lonlat_bbox[0]), 'miny': str(lonlat_bbox[1]), 
-                'maxx': str(lonlat_bbox[2]), 'maxy': str(lonlat_bbox[3])
+                'minx': str(latlon_bbox[0]), 'miny': str(latlon_bbox[1]), 
+                'maxx': str(latlon_bbox[2]), 'maxy': str(latlon_bbox[3])
             })
         else:
             # 属性を持つサブエレメントを追加

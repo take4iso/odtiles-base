@@ -55,7 +55,7 @@ def wms(request):
         return HttpResponse('Method not allowed', status=405)
 
     # URLパターンを正規表現で解析
-    match_path = re.match(r'^/wms/(.*)', request.path)
+    match_path = re.match(r'^/wms/(.*?)/*$', request.path)
     if match_path is None:
         return HttpResponse('Bad Request', status=400)
 
