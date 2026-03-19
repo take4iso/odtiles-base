@@ -37,10 +37,6 @@ URL = 'http://localhost:8000'
 #アップロードAPIトークン
 UPLOAD_API_TOKEN = ''
 
-# SESSIONタイムアウト関連
-SESSION_COOKIE_AGE = 3600
-SESSION_SAVE_EVERY_REQUEST = True
-
 # タイルのルートディレクトリ
 TILE_SOURCE_FOLDER = '/mnt/odtiles/tilesrc/'
 TILE_OUTPUT_FOLDER = '/mnt/odtiles/tileout/'
