@@ -86,6 +86,10 @@ curl -X POST http(s)://<ドメイン名>/upload/aaa/bbb/ \
     -F "file=@/my/file/path/sample.tif"
 ```
 
+## アップロードの代わりにソースフォルダに直接ファイルを置く
+`TILE_SOURCE_FOLDER`はホスト側のディレクトリをバインドしているため、`upload`を使用せずにホストから直接GeoTIFFファイルを配置してもよい  
+ファイル配置直後から、対応するパスでXYZタイルサービスが稼働する
+
 ## WMS有効化API
 アップロードしたGeoTIFFファイルのWMSを有効にする
 
