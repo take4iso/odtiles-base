@@ -181,6 +181,12 @@ def getInfoFile(sourceFile):
     if not os.path.exists(infoFile):
         #ないので作る
         return createInfoFile(sourceFile)
+    else:
+        stime = os.path.getmtime(sourceFile)
+        itime = os.path.getmtime(infoFile)
+        if itime < stime:
+            #古いので作り直す
+            return createInfoFile(sourceFile)
     with open(infoFile, 'r') as f:
         info = json.load(f)
     return info
