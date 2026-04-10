@@ -1,4 +1,4 @@
-FROM oraclelinux:8
+FROM oraclelinux:10
 
 # サーバー名
 ARG SERVER_NAME=localhost
@@ -19,12 +19,11 @@ ARG MAX_AGE=86400
 # タイルの最大キャッシュ期間（ライブタイル用、秒）
 ARG MAX_AGE_LIVE=60
 
-RUN dnf config-manager --enable ol8_codeready_builder && \
+RUN dnf config-manager --enable ol10_codeready_builder && \
     dnf update && \
-    dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && \
+    dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm && \
     dnf -y install langpacks-ja glibc-langpack-ja.x86_64 wget gcc gcc-c++ make cmake git m4 libcurl-devel python312 python3.12-devel python3.12-pip unzip libdap zlib-devel proj proj-devel swig
 
-RUN alternatives --set python3 /usr/bin/python3.12
 RUN pip3 install --upgrade pip && \
     pip3 install setuptools numpy
 
